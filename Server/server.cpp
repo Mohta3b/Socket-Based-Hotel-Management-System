@@ -5,30 +5,33 @@
 // json files
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
-//#include "json.hpp"
-// socket
-#include <signal.h>
+// #include "json.hpp"
+//  socket
+// #include <signal.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 
 // include needed headers
 #include "../Client/headers.hpp"
 #include "admin.hpp"
 #include "room.hpp"
 
-void readConfigFile(std::string &hostName, int &portNumber){
+void readConfigFile(std::string &host_name, int &port_number, int max_clients)
+{
     // read json file
     boost::property_tree::ptree pt;
     boost::property_tree::read_json("config.json", pt);
 
-    // get hostName and portNumber
-    hostName = pt.get<std::string>("hostName");
-    portNumber = pt.get<int>("commandChannelPort");
+    // get host_name and port_number
+    host_name = pt.get<std::string>("hostName");
+    port_number = pt.get<int>("commandChannelPort");
+    max_clients = pt.get<int>("maxClients");
 }
 
-int setupServer(int port)
+int setupServer(int port, std::string host_name, int max_clients)
 {
     struct sockaddr_in address;
     int server_fd;
@@ -38,7 +41,7 @@ int setupServer(int port)
     setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
 
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = inet_addr(host_name.c_str());
     address.sin_port = htons(port);
 
     if (bind(server_fd, (struct sockaddr *)&address, sizeof(address)) < 0)
@@ -48,20 +51,23 @@ int setupServer(int port)
         return -1;
     }
 
-    listen(server_fd, 4);
+    listen(server_fd, max_clients);
 
     return server_fd;
 }
 
-void createServer(){
+int createServer()
+{
     // read hostName and portNumber from config.json
-    std::string hostName;
-    int portNumber;
-    readConfigFile(hostName, portNumber);
+    std::string host_name;
+    int port_number;
+    int max_clients;
+    readConfigFile(host_name, port_number, max_clients);
 
     // setup server
-    int server_fd = setupServer(portNumber);
+    int server_fd = setupServer(port_number, host_name, max_clients);
     printf("server is running on port %d\n", server_fd);
+    return server_fd;
 }
 
 void readUsersFile(std::vector<User> &users, std::vector<Admin> &admins)
@@ -122,10 +128,7 @@ void readUsersFile(std::vector<User> &users, std::vector<Admin> &admins)
         // add admin to admins vector
         admins.push_back(admin);
     }
-
-
 }
-
 
 void readRoomsFile(std::vector<Room> &rooms)
 {
@@ -175,24 +178,33 @@ void readRoomsFile(std::vector<Room> &rooms)
         }
 
         // create room
-        Room room(room_number,status, price, max_capacity, capacity, reserved_users);
-        
+        Room room(room_number, status, price, max_capacity, capacity, reserved_users);
+
         // add room to rooms vector
         rooms.push_back(room);
     }
 }
 
+void runServer(int server_fd, std::vector<User>& users, std::vector<Admin>& admins, std::vector<Room>& rooms)
+{
+    fd_set master_set, working_set;
+    FD_ZERO(&master_set);
+    // create TCP connection
+}
+
 int main()
 {
-    createServer();
-    
+    int server_fd = createServer();
+
     std::vector<Admin> admins;
     std::vector<User> users;
-    
+
     readUsersFile(users, admins);
 
     std::vector<Room> rooms;
     readRoomsFile(rooms);
+
+    runServer(server_fd, users, admins, rooms);
 
     return 0;
 }

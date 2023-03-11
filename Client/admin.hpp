@@ -1,8 +1,15 @@
 #include <string>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+
+
 
 class Admin{
     public:
         Admin(int id, std::string adminName, std::string adminPassword);
+        Admin(){};
         int getId();
         std::string getAdminName();
         std::string getAdminPassword();
@@ -13,8 +20,21 @@ class Admin{
         int id;
         std::string adminName;
         std::string adminPassword;
+
+        friend void to_json(json& j, const Admin& a);
+        friend void from_json(const json& j, Admin& a);
 };
 
+void to_json(json& j, const Admin& a) {
+    j = json{ {"id", a.id}, {"username", a.adminName},
+     {"password", a.adminPassword} };
+}
+
+void from_json(const json& j, Admin& a) {
+    j.at("id").get_to(a.id);
+    j.at("username").get_to(a.adminName);
+    j.at("adminPassword").get_to(a.adminPassword);
+}
 
 Admin::Admin(int id, std::string adminName, std::string adminPassword){
     this->id = id;

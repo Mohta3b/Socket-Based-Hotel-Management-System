@@ -16,8 +16,8 @@
 
 // include needed headers
 #include "../Client/headers.hpp"
-#include "admin.hpp"
-#include "room.hpp"
+#include "../Client/admin.hpp"
+#include "../Client/room.hpp"
 
 void readConfigFile(std::string &host_name, int &port_number, int max_clients)
 {

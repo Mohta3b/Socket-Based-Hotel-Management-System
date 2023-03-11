@@ -1,8 +1,14 @@
 #include <string>
+#include <nlohmann/json.hpp>
+
+using json = nlohmann::json;
+
+
 
 class User{
     public:
         User(int id, std::string clientName, std::string clientPassword, int clientBalance, std::string clientPhoneNumber, std::string clientAddress);
+        User(){};
         int getId();
         std::string getClientName();
         std::string getClientPassword();
@@ -22,7 +28,24 @@ class User{
         int clientBalance;
         std::string clientPhoneNumber;
         std::string clientAddress;
+        friend void to_json(json& j, const User& u);
+        friend void from_json(const json& j, User& u);
 };
+
+void to_json(json& j, const User& u) {
+    j = json{ {"id", u.id}, {"username", u.clientName},
+     {"password", u.clientPassword}, {"balance", u.clientBalance},
+     {"phoneNumber", u.clientPhoneNumber}, {"address", u.clientAddress} };
+}
+
+void from_json(const json& j, User& u) {
+    j.at("id").get_to(u.id);
+    j.at("username").get_to(u.clientName);
+    j.at("password").get_to(u.clientPassword);
+    j.at("balance").get_to(u.clientBalance);
+    j.at("phoneNumber").get_to(u.clientPhoneNumber);
+    j.at("address").get_to(u.clientAddress);
+}
 
 User::User(int id, std::string clientName, std::string clientPassword, int clientBalance, std::string clientPhoneNumber, std::string clientAddress){
     this->id = id;

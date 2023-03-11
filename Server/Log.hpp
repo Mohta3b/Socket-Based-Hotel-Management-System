@@ -1,6 +1,10 @@
 #include <iostream>
 #include <map>
+#define SYSTEM 0
+#define USER 1
+#define ADMIN 2
 
+void logEvent(int type, int log_id, std::string detail = "", int user_id = 0);
 std::map<int,std::string> logs = {
     {0,"set server"},
     {1, "read json files"},
@@ -23,5 +27,6 @@ std::map<int,std::string> logs = {
     {18, "request: modify room"},
     {19, "request: remove room"},
     {20, "client disconnected"},
-    {21, "server shut down"}
+    {21, "server shut down"},
+    {22,"setup server failed!"}
 };

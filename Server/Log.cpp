@@ -6,9 +6,7 @@
 #include <boost/filesystem.hpp>
 #include "Log.hpp"
 
-#define SYSTEM 0
-#define USER 1
-#define ADMIN 2
+
 
 void checkDirectory(int type, int user_id)
 {

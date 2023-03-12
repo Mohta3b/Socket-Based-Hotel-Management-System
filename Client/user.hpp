@@ -7,7 +7,8 @@ using json = nlohmann::json;
 
 class User{
     public:
-        User(int id, std::string clientName, std::string clientPassword, int clientBalance, std::string clientPhoneNumber, std::string clientAddress);
+        User(int id, std::string clientName, std::string clientPassword,
+         int clientBalance, std::string clientPhoneNumber, std::string clientAddress);
         User(){};
         int getId();
         std::string getClientName();

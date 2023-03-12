@@ -17,21 +17,7 @@
 
 const int BUFFER_SIZE = 1024;
 const int NOTREGISTERED = -1;
-enum Status {PENDDING, ACCEPTED, REJECTED};
-Client &Server::findClient(int socket_fd)
-{
-  for (auto &c : onlineClients)
-  {
-    if (c.socket_fd == socket_fd)
-    {
-      return c; // check it is refrence
-    }
-  }
-  Client c;
-  c.index = NOTREGISTERED;
-  c.commandID = NOTREGISTERED;
-  return c;
-}
+
 
 int Server::acceptClient(int server_fd = -2)
 { // -2 STANDS FOR EMPTY
@@ -204,32 +190,32 @@ void Server::run()
               }
             } else
             { // client has entered signup/login
-              if( client.commandID == 0) 
+              if(msg == "quit")
+              {
+                client.commandID = NOTREGISTERED;
+                client.command = "";
+                client.socket_fd = i;
+                client.isAdmin = false;
+              } else if( client.commandID == 0) 
               { // command1 : signup : failed - pending - successfull
                 Status signUpStatus = signUp(client, msg);
                 if( signUpStatus == Status::ACCEPTED) {
                   // create a new user
-
+                  addUser(client.command);
                   // reset client
-                   
+                  client = Client();
+                  client.socket_fd = i;
                 }
               } else if (client.commandID == 1)
               { // command2 : login
-                login();
-
+                login(client, msg);
               }
-
             }
           } else
           { // client has logged in
             // tokenize msg
-            
-            stringstream ss(msg);
-            string token;
             vector<string> tokens;
-            while (getline(ss, token, ' ')) {
-              tokens.push_back(token);
-            }
+            tokens = tokenize(msg, ' ');
             int commandNum;
             if(client.commandID == NOTREGISTERED) {
               // msg to commandNum
@@ -336,6 +322,49 @@ void Server::run()
   }
 }
 
+// server uttilities
+Client &Server::findClient(int socket_fd)
+{
+  for (auto &c : onlineClients)
+  {
+    if (c.socket_fd == socket_fd)
+    {
+      return c; // check it is refrence
+    }
+  }
+  Client c;
+  c.index = NOTREGISTERED;
+  c.commandID = NOTREGISTERED;
+  return c;
+}
+// find user or admin
+// password, index, isAdmin
+
+MiniClient Server::findUserAdminByName(string name) {
+  MiniClient client;
+  client.index = NOTREGISTERED;
+  for (int i = 0; i < admins.size(); i++)
+  {
+    if (admins[i].getId() == id)
+    {
+      client.index = i;
+      client.isAdmin = true;
+      client.password = admins[i].getAdminPassword();
+      return client;
+    }
+  }
+  for (int i = 0; i < users.size(); i++)
+  {
+    if (users[i].getId() == id)
+    {
+      client.index = i;
+      client.isAdmin = false;
+      client.password = users[i].getClientPassword();
+      return client;
+    }
+  }
+  return client;
+}
 // repeated name
 bool Server::isRepeatedName(string name) {
   for (int i = 0; i < admins.size(); i++)
@@ -350,12 +379,52 @@ bool Server::isRepeatedName(string name) {
   }
   return false;
 }
-
-
+// find unique user id
+int Server::findUniqueID() {
+  // random int 
+  int id = 0;
+  id = users.size() + admins.size() + 1;
+  while (true)
+  {
+    bool flag = true;
+    for (int i = 0; i < admins.size(); i++)
+    {
+      if (admins[i].getId() == id)
+      {
+        flag = false;
+        break;
+      }
+    }
+    if (flag)
+    {
+      for (int i = 0; i < users.size(); i++)
+      {
+        if (users[i].getId() == id)
+        {
+          flag = false;
+          break;
+        }
+      }
+    }
+    if (flag)
+      return id;
+    id++;
+  }
+}
+// create new user
+void Server::addUser(string args) {
+  // parse args 
+  vector<string> tokens;
+  tokens = tokenize(args);
+  // find unique id
+  int uniqueID = findUniqueID();
+  User user(uniqueID, tokens[0], tokens[1], stoi(tokens[2]),
+   tokens[3], tokens[4]);
+}
 
 // commands
 // client
-status Server::signUp(Client& client, string& msg) {
+Status Server::signUp(Client& client, string& msg) {
     // msg shouldnt contain \n
     string sendMsg;
     boost::trim(msg);
@@ -440,24 +509,53 @@ status Server::signUp(Client& client, string& msg) {
       msg = sendMsg;
       return status;
   }
-  void Server::login();
-  void Server::viewUserInfo();
-  void Server::viewRoomInfo();
-  void Server::logout();
-  // user
-  void Server::bookRoom();
-  void Server::cancelReserve();
-  void Server::leaveRoom();
-  // admin 
-  void Server::viewAllUsersInfo();
-  void Server::banGuest();
-  void Server::addRoom();
-  void Server::modifyRoom();
-  void Server::deleteRoom();
-  void Server::passDay();
+void Server::login(Client& client, string& msg) {
+  string sendMsg;
+  vector<string> tokens;
+  tokens = tokenize(msg, ' ');
+  if(tokens.size() != 2) {
+    int errorNum = 503;
+    logEvent(SYSTEM, 24, get_error(errorNum));
+    msg = get_error(errorNum);
+    return;
+  }
+  string username = tokens[0];
+  string password = tokens[1];
+  // check invalid username or password
+  MiniClient cur_client = findUserAdminByName(username);
+  if (cur_client.index == NOTREGISTERED || cur_client.password != password) { 
+    int errorNum = 430;
+    logEvent(SYSTEM, 24, get_error(errorNum));
+    msg = get_error(errorNum);
+    return;
+  }
+  client.index = cur_client.index;
+  client.isAdmin = cur_client.isAdmin;
+  client.argsNum = 0;
+  client.command = "";
+  client.commandID = NOTREGISTERED;
+  int errorNum = 230;
+  int user_id = (cur_client.isAdmin) ? admins[cur_client.index].getId() : users[cur_client.index].getId();
+  logEvent(USER, 24, get_error(errorNum), user_id);
 
-  // diff commands
-  void Server::editInfo();
+  msg = get_error(errorNum);
+}
+void Server::viewUserInfo();
+void Server::viewRoomInfo();
+void Server::logout();
+// user
+void Server::bookRoom();
+void Server::cancelReserve();
+void Server::leaveRoom();
+// admin 
+void Server::viewAllUsersInfo();
+void Server::banGuest();
+void Server::addRoom();
+void Server::modifyRoom();
+void Server::deleteRoom();
+void Server::passDay();
 
-  //  master set as server private property, no need because the client can use the same port
-  
+// diff commands
+void Server::editInfo();
+
+//  master set as server private property, no need because the client can use the same port

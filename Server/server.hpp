@@ -11,6 +11,7 @@ using namespace std;
 const int BUFFER_SIZE = 1024;
 const string CONFIG_PATH = "config.json";
 const int NOTREGISTERED = -1;
+enum Status {PENDDING, ACCEPTED, REJECTED};
 struct Client
 {
   Client() {
@@ -27,6 +28,11 @@ struct Client
   string command;
   int argsNum;
   int commandID;
+};
+struct MiniClient {
+  string password;
+  int index;
+  bool isAdmin;
 };
 
 class Server
@@ -49,15 +55,22 @@ private:
   int setupServerSocket();
   // set initial time
   void Server::setDate();
+  // uttilities
   //  find client
   Client& findClient(int socket_fd);
   void readRoomsUserFiles(string roomsPath, string usersPath);
   //  is repeated
   bool isRepeatedName(string name);
+  // find unique user id
+  int findUniqueID();
+  // add new user
+  void Server::addUser(string args);
+  // find user or admin by name
+  MiniClient findUserAdminByName(string name);
   // commands
   // client
-  void signUp();
-  void login();
+  Status signUp(Client& client, string& msg);
+  void login(Client& client, string& msg);
   void viewUserInfo();
   void viewRoomInfo();
   void editInfo();

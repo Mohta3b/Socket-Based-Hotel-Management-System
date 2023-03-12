@@ -93,3 +93,16 @@ bool isAddress(string str) {
   }
   return true;
 }
+
+// tokenize
+vector<string> tokenize(string msg, char delim='\n') {
+  boost::trim(msg);
+  //tokenize msg to username password
+  stringstream ss(msg);
+  string token;
+  vector<string> tokens;
+  while (getline(ss, token, delim)) {
+    tokens.push_back(token);
+  }
+  return tokens;
+}

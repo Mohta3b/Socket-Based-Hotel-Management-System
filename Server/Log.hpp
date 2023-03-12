@@ -11,7 +11,7 @@ std::map<int,std::string> logs = {
     {2, "client connected to server"},
     {3, "user signed up"},
     {4, "user logged out"},
-    {5 , "failed attempt to sign in"},
+    {5, "failed attempt to sign in"},
     {6, "user signed in"},
     {7, "request: view user info"},
     {8, "request: view rooms info"},
@@ -28,5 +28,6 @@ std::map<int,std::string> logs = {
     {19, "request: remove room"},
     {20, "client disconnected"},
     {21, "server shut down"},
-    {22,"setup server failed!"}
+    {22,"setup server failed!"},
+    {23,"Error!"}
 };

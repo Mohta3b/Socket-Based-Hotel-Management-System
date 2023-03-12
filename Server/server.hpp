@@ -10,9 +10,16 @@ using json = nlohmann::json;
 using namespace std;
 const int BUFFER_SIZE = 1024;
 const string CONFIG_PATH = "config.json";
-
+const int NOTREGISTERED = -1;
 struct Client
 {
+  Client() {
+    socket_fd = NOTREGISTERED;
+    isAdmin = false;
+    index = NOTREGISTERED;
+    command = "";
+    commandID = -1;
+  }
   int socket_fd;
   bool isAdmin;
   int index; // save client id if sth could happen to array.
@@ -24,6 +31,7 @@ class Server
 {
 private:
   int port;
+  string date;
   string host_name;
   int max_clients;
   int serverFd;
@@ -37,9 +45,11 @@ private:
   int acceptClient(int server_fd = -2);
   // setting up a server
   int setupServerSocket();
+  // set initial time
+  void Server::setDate();
   //  find client
   Client& findClient(int socket_fd);
-  void Server::readRoomsUserFiles(string roomsPath, string usersPath);
+  void readRoomsUserFiles(string roomsPath, string usersPath);
   // commands
   // client
   void signUp();
@@ -56,7 +66,6 @@ private:
   void viewAllUsersInfo();
   void passDay();
   void banGuest();
-  void editRooms();
   void addRoom();
   void modifyRoom();
   void deleteRoom();

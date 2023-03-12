@@ -28,8 +28,8 @@ std::map<int, struct error_info> ErrorMap = {
     {413, {19, (char *)"Successfully Leaving!"}},
     {430, {20, (char *)"Invalid username or password!"}},
     {451, {21, (char *)"User already existed!"}},
-    {503, {22, (char *)"Bad sequence of commands!"}}
-    
+    {503, {22, (char *)"Bad sequence of commands!"}},
+    {200, {23, (char *)"OK!SUCCESS!"}}
 };
 
 std::string get_error(int error_code){

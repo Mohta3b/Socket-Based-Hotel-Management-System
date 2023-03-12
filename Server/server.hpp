@@ -18,12 +18,14 @@ struct Client
     isAdmin = false;
     index = NOTREGISTERED;
     command = "";
+    argsNum = 0;
     commandID = -1;
   }
   int socket_fd;
   bool isAdmin;
   int index; // save client id if sth could happen to array.
   string command;
+  int argsNum;
   int commandID;
 };
 
@@ -50,6 +52,8 @@ private:
   //  find client
   Client& findClient(int socket_fd);
   void readRoomsUserFiles(string roomsPath, string usersPath);
+  //  is repeated
+  bool isRepeatedName(string name);
   // commands
   // client
   void signUp();

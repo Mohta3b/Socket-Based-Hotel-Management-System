@@ -13,7 +13,7 @@
 #include "../Server/Log.hpp"
 #include "../Server/utility.hpp"
 #include "../Server/Errors.hpp"
-
+#include <boost/algorithm/string.hpp>
 
 const int BUFFER_SIZE = 1024;
 const int NOTREGISTERED = -1;
@@ -206,13 +206,12 @@ void Server::run()
             { // client has entered signup/login
               if( client.commandID == 0) 
               { // command1 : signup : failed - pending - successfull
-                Status signUpStatus = signup();
-                if( signUpStatus == status.pending) {
-                  // client.commandID = NOTREGISTERED;
-                } else if(  signUpStatus == status.failed) {
-                  client.commandID = NOTREGISTERED;
-                } else if(  signUpStatus == status.successfull) {
-                  client.commandID = NOTREGISTERED;
+                Status signUpStatus = signUp(client, msg);
+                if( signUpStatus == Status::ACCEPTED) {
+                  // create a new user
+
+                  // reset client
+                   
                 }
               } else if (client.commandID == 1)
               { // command2 : login
@@ -337,10 +336,109 @@ void Server::run()
   }
 }
 
-  // commands
-  // client
-  status Server::signUp() {
-    
+// repeated name
+bool Server::isRepeatedName(string name) {
+  for (int i = 0; i < admins.size(); i++)
+  {
+    if (admins[i].getAdminName() == name)
+      return true;
+  }
+  for (int i = 0; i < users.size(); i++)
+  {
+    if (users[i].getClientName() == name)
+      return true;
+  }
+  return false;
+}
+
+
+
+// commands
+// client
+status Server::signUp(Client& client, string& msg) {
+    // msg shouldnt contain \n
+    string sendMsg;
+    boost::trim(msg);
+    Status status = Status::PENDDING;
+    if(msg.size() == 0) {
+      status = Status::REJECTED;
+      int errorNum = 503;
+      logEvent(SYSTEM, 5, get_error(errorNum));
+      msg = get_error(errorNum);
+      return status;
+    }
+    bool flagValid = true;
+    switch (client.argsNum)
+      {
+      case 0: // username
+        flagValid = isAlphaNum(msg);
+        if (!flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 503;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);
+          return status;
+        }
+        flagValid = isRepeatedName(msg);
+        if (flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 451;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);                    
+          return status;
+        }
+        sendMsg = get_error(311);
+        break;
+      case 1: // password
+        flagValid = isAlphaNum(msg) && strongPassword(msg);
+        if (!flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 503;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);
+          return status;
+        }
+        sendMsg = get_error(200);
+        break;
+      case 2: // balance
+        flagValid = isNumber(msg);
+        if (!flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 503;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);
+          return status;
+        }
+        sendMsg = get_error(200);
+        break;
+      case 3: // phone
+        flagValid = isPhoneNumber(msg);
+        if (!flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 503;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);
+          return status;
+        }
+        sendMsg = get_error(200);
+        break;
+      case 4: // address
+        flagValid = isAddress(msg);
+        if (!flagValid) {
+          status = Status::REJECTED;
+          int errorNum = 503;
+          logEvent(SYSTEM, 5, get_error(errorNum));
+          msg = get_error(errorNum);
+          return status;
+        }
+        status = Status::ACCEPTED;
+        sendMsg = get_error(200);
+        break;
+      }
+      client.argsNum++;
+      client.command += (msg+"\n"); //"  2232\n std\nf g l l \ndfggfh\ndfg  \n";
+      msg = sendMsg;
+      return status;
   }
   void Server::login();
   void Server::viewUserInfo();
@@ -361,5 +459,5 @@ void Server::run()
   // diff commands
   void Server::editInfo();
 
-  //  master set as server private property
+  //  master set as server private property, no need because the client can use the same port
   

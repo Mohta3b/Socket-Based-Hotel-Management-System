@@ -94,6 +94,7 @@ class Room{
         Room(){};
         int getNumber();
         bool getStatus();
+        std::string getStatusString();
         float getPrice();
         int getMaxCapacity();
         int getCurrentCapacity();
@@ -151,6 +152,14 @@ int Room::getNumber(){
 
 bool Room::getStatus(){
     return this->status;
+}
+
+std::string Room::getStatusString(){
+    if (this->status == 0)
+        return "empty";
+    else 
+        return "full";
+
 }
 
 float Room::getPrice(){

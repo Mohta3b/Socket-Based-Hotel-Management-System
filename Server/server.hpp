@@ -12,6 +12,7 @@ const int BUFFER_SIZE = 1024;
 const string CONFIG_PATH = "config.json";
 const int NOTREGISTERED = -1;
 enum Status {PENDDING, ACCEPTED, REJECTED};
+
 struct Client
 {
   Client() {
@@ -71,10 +72,10 @@ private:
   // client
   Status signUp(Client& client, string& msg);
   void login(Client& client, string& msg);
-  void viewUserInfo();
-  void viewRoomInfo();
+  void logout(Client& client, string& msg);
+  void viewUserInfo(Client& client, string& msg);
+  void viewRoomsInfo(Client& client, string& msg, std::vector<string>& command);
   void editInfo();
-  void logout();
   // user
   void bookRoom();
   void cancelReserve();

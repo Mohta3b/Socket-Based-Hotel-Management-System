@@ -106,3 +106,9 @@ vector<string> tokenize(string msg, char delim='\n') {
   }
   return tokens;
 }
+
+bool validRangeDate(string d1, string d2, string systemDate) {
+  vector<string> d1_tokens = tokenize(d1, '-');
+
+  return true;
+}

@@ -119,3 +119,7 @@ void User::setClientPhoneNumber(std::string clientPhoneNumber){
 void User::setClientAddress(std::string clientAddress){
     this->clientAddress = clientAddress;
 }
+
+void User::addReservedRooms(bookedClient* bookedClient){
+    this->reservedRooms.push_back(bookedClient);
+}

@@ -23,7 +23,7 @@ class bookedClient{
         void setReserveDate(std::string reserveDate);
         void setCheckoutDate(std::string checkoutDate);
         void setRoomNumber(int roomNumber);
-    
+
     private:
         int id;
         int numberofBeds;
@@ -96,7 +96,7 @@ void bookedClient::setRoomNumber(int roomNumber){
 
 class Room{
     public:
-        Room(int room_number, bool status, float price, int maxCapacity, int currentCapacity , std::vector<bookedClient> bookedClients);
+        Room(int room_number, bool status, float price, int maxCapacity, int currentCapacity , std::vector<bookedClient*> bookedClients);
         Room(){};
         int getNumber();
         bool getStatus();
@@ -109,7 +109,11 @@ class Room{
         void setPrice(float price);
         void setMaxCapacity(int maxCapacity);
         void setCurrentCapacity(int currentCapacity);
-        void setBookedClients(std::vector<bookedClient> bookedClients);
+        void setBookedClients(std::vector<bookedClient*> bookedClients);
+        // add client
+        void addClient(bookedClient* client);
+        std::string getRoomInfo();
+        std::string getBookedClientsString();
     private:
         int room_number;
         bool status;
@@ -124,7 +128,14 @@ class Room{
 void to_json(json& j, const Room& r) {
     j = json{ {"number", r.room_number}, {"status", r.status},
      {"price", r.price}, {"maxCapacity", r.maxCapacity},
-      {"capacity", r.currentCapacity}, {"users", r.bookedClients} };
+      {"capacity", r.currentCapacity} };
+    // add booked clients
+    
+    for(auto& element : r.bookedClients){
+        json j2;
+        to_json(j2, *element);
+        j["users"].push_back(j2);
+    }
 }
 
 void from_json(const json& j, Room& r) {
@@ -133,17 +144,22 @@ void from_json(const json& j, Room& r) {
     j.at("price").get_to(r.price);
     j.at("maxCapacity").get_to(r.maxCapacity);
     j.at("capacity").get_to(r.currentCapacity);
-    j.at("users").get_to(r.bookedClients);
+    // add booked clients from json file to vector
+    // vector<bookedClient> bc;
+    // j.at("users").get_to(bc);
     
-    // for(auto& element : j.at("users")){
-    //     bookedClient bc;
-    //     from_json(element, bc);
-    //     r.bookedClients.push_back(bc);
-    // }
+    for(auto& element : j.at("users")){
+        bookedClient& bc = *(new bookedClient());
+        from_json(element, bc);
+        // set room number
+        bc.setRoomNumber(r.room_number);
+        r.bookedClients.push_back(&bc);
+    }
+    
 }
 
 
-Room::Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient> bookedClients){
+Room::Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient*> bookedClients){
     this->room_number = number;
     this->status = status;
     this->price = price;
@@ -180,7 +196,7 @@ int Room::getCurrentCapacity(){
     return this->currentCapacity;
 }
 
-std::vector<bookedClient> Room::getBookedClients(){
+std::vector<bookedClient*> Room::getBookedClients(){
     return this->bookedClients;
 }
 
@@ -200,10 +216,33 @@ void Room::setCurrentCapacity(int currentCapacity){
     this->currentCapacity = currentCapacity;
 }
 
-void Room::setBookedClients(std::vector<bookedClient> bookedClients){
+void Room::setBookedClients(std::vector<bookedClient*> bookedClients){
     this->bookedClients = bookedClients;
 }
 
+void Room::addClient(bookedClient* client) {
+    this->bookedClients.push_back(client);
+}
 
+std::string Room::getBookedClientsString(){
+    std::string msg = "";
+    for (int i = 0; i < bookedClients.size(); i++)
+    {
+      // cur room BookedClients;
+      msg += "User ID: " + to_string(bookedClients[i]->getId()) 
+      + "\nNumber of Reserved Beds: " + to_string(bookedClients[i]->getNumberofBeds())
+      + "\nReservervation Date: " + bookedClients[i]->getReserveDate()
+      + "\nCheck Out Date: " + bookedClients[i]->getCheckoutDate() + "\n";
+    }
+    return msg;
+}
 
-
+std::string Room::getRoomInfo(){
+  std::string msg="";
+  msg += "Room Number: " + to_string(room_number) + "\nRoom Price: " +
+  to_string(price) + "\nRoom Current Residents: " +
+  to_string(currentCapacity) + "\nRoom Status: " + this->getStatusString() + 
+  " ( " + to_string(this->getMaxCapacity() - this->getCurrentCapacity()) +
+    " / " + to_string(this->getMaxCapacity()) + " )\n" ;
+  return msg;
+}

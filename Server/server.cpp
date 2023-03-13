@@ -65,6 +65,20 @@ void Server::readRoomsUserFiles(string roomsPath = "RoomsInfo.json", string user
   this->users = clients["users"];
   this->rooms = rooms["rooms"];
   this->admins = clients["admins"];
+  // add reserved bookedclients to user
+  for (auto& user: this->users) {
+    for (auto &room : this->rooms)
+    {
+      for (auto &client : room.getBookedClients())
+      {
+        
+        if (client->getId() == user.getId())
+        {
+          user.addReservedRooms(client);
+        }
+      }
+    }
+  }
 }
 
 void Server::setDate() {
@@ -535,6 +549,7 @@ void Server::login(Client& client, string& msg) {
   logEvent((client.isAdmin) ? ADMIN : USER, 6, get_error(errorNum), user_id);
 
   msg = get_error(errorNum);
+  
 }
 
 void Server::logout(Client& client, string& msg) {
@@ -581,24 +596,13 @@ void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& com
       msg = "Available Rooms Inforamtion:\n";
       if (rooms[i].getStatusString() == "empty")
       {
-        msg += "Room Number: " + to_string(rooms[i].getNumber()) 
-        + "\nRoom Price: " + to_string(rooms[i].getPrice()) 
-        + "\nRoom Current Residents: " + to_string(rooms[i].getCurrentCapacity()) 
-        + "\nRoom Status: " + rooms[i].getStatusString() + " ( "
-        + to_string(rooms[i].getMaxCapacity()-rooms[i].getCurrentCapacity()) 
-        + " / " + to_string(rooms[i].getMaxCapacity()) + " )\n";
+        msg += rooms[i].getRoomInfo();
 
         // if client is admin then show booked users in each room also
         if (client.isAdmin)
         {
           msg += "***Booked Users:***\n";
-          for (int j = 0; j < rooms[i].getBookedClients().size(); j++)
-          {
-            msg += "User ID: " + to_string(rooms[i].getBookedClients()[j].getId()) 
-            + "\nNumber of Reserved Beds: " + to_string(rooms[i].getBookedClients()[j].getNumberofBeds()) 
-            + "\nReservervation Date: " + rooms[i].getBookedClients()[j].getReserveDate() 
-            + "\nCheck Out Date: " + rooms[i].getBookedClients()[j].getCheckoutDate() + "\n";
-          }
+          msg += rooms[i].getBookedClientsString();
         } 
         msg += "\n*****************************\n";
       }
@@ -606,21 +610,15 @@ void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& com
   }
   else if ((command.size() == 1) || (command.size() == 2 && command[1] == "all"))
   {
-    msg = "All Rooms Information:";
+    msg = "All Rooms Information:\n";
     for (int i = 0; i < rooms.size(); i++)
     {
-      msg += "Room Number: " + to_string(rooms[i].getNumber()) + "\nRoom Price: " + to_string(rooms[i].getPrice()) + "\nRoom Current Residents: " + to_string(rooms[i].getCurrentCapacity()) + "\nRoom Status: " + rooms[i].getStatusString() + " ( " + to_string(rooms[i].getMaxCapacity()-rooms[i].getCurrentCapacity()) + " / " + to_string(rooms[i].getMaxCapacity()) + " )" + "\n*****************************\n";
+      msg += rooms[i].getRoomInfo();
       // if client is admin then show booked users in each room also
       if (client.isAdmin)
       {
         msg += "***Booked Users:***\n";
-        for (int i = 0; i < rooms.size(); i++)
-        {
-          for (int j = 0; j < rooms[i].getBookedClients().size(); j++)
-          {
-            msg += "User ID: " + to_string(rooms[i].getBookedClients()[j].getId()) + "\nNumber of Reserved Beds: " + to_string(rooms[i].getBookedClients()[j].getNumberofBeds()) + "\nReservervation Date: " + rooms[i].getBookedClients()[j].getReserveDate() + "\nCheck Out Date: " + rooms[i].getBookedClients()[j].getCheckoutDate() + "\n";
-          }
-        }
+        msg += rooms[i].getBookedClientsString();
       }
       msg += "\n*****************************\n";
     }

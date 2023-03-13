@@ -85,8 +85,9 @@ person p=person("Ned Flanders", "744 Evergreen Terrace", 60);
 
 // conversion: person -> json
 json j = {p,p};
-
-std::cout << j[0]["name"] << std::endl;
+j["user"].push_back(p);
+cout << "----------------------------\n" << endl;
+std::cout << j.dump()<< std::endl;
 string ss = j[0]["name"];
 std::cout << ss << '\n';
 std::cout << p.get_address() << std::endl;

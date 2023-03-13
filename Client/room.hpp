@@ -2,6 +2,8 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 
+// be careful about reading from json file cause of extra fields!!!!!!
+
 using json = nlohmann::json;
 
 
@@ -9,24 +11,25 @@ using json = nlohmann::json;
 
 class bookedClient{
     public:
-        bookedClient(int id, int numberofBeds, std::string reserveDate, std::string checkoutDate);
+        bookedClient(int id, int numberofBeds, std::string reserveDate, std::string checkoutDate , int roomNumber);
         bookedClient(){};
         int getId();
         int getNumberofBeds();
         std::string getReserveDate();
         std::string getCheckoutDate();
-        int getNumberOfDays();
+        int getRoomNumber();
         void setId(int id);
         void setNumberofBeds(int numberofBeds);
         void setReserveDate(std::string reserveDate);
-        void setCheckoutDate(std::string checkoutDate); 
+        void setCheckoutDate(std::string checkoutDate);
+        void setRoomNumber(int roomNumber);
     
     private:
         int id;
         int numberofBeds;
         std::string reserveDate;
         std::string checkoutDate;
-        int numberOfDays;
+        int roomNumber;
         friend void to_json(json& j, const bookedClient& bc);
         friend void from_json(const json& j, bookedClient& bc);      
 };
@@ -43,12 +46,12 @@ void from_json(const json& j, bookedClient& bc) {
     j.at("checkoutDate").get_to(bc.checkoutDate);
 }
 
-bookedClient::bookedClient(int id, int numberofBeds, std::string reserveDate, std::string checkoutDate){
+bookedClient::bookedClient(int id, int numberofBeds, std::string reserveDate, std::string checkoutDate, int roomNumber){
     this->id = id;
     this->numberofBeds = numberofBeds;
     this->reserveDate = reserveDate;
     this->checkoutDate = checkoutDate;
-    this->numberOfDays = 0;
+    this->roomNumber = roomNumber;
 }
 
 int bookedClient::getId(){
@@ -67,8 +70,8 @@ std::string bookedClient::getCheckoutDate(){
     return this->checkoutDate;
 }
 
-int bookedClient::getNumberOfDays(){
-    return this->numberOfDays;
+int bookedClient::getRoomNumber(){
+    return this->roomNumber;
 }
 
 void bookedClient::setId(int id){
@@ -87,6 +90,9 @@ void bookedClient::setCheckoutDate(std::string checkoutDate){
     this->checkoutDate = checkoutDate;
 }
 
+void bookedClient::setRoomNumber(int roomNumber){
+    this->roomNumber = roomNumber;
+}
 
 class Room{
     public:
@@ -98,7 +104,7 @@ class Room{
         float getPrice();
         int getMaxCapacity();
         int getCurrentCapacity();
-        std::vector<bookedClient> getBookedClients();
+        std::vector<bookedClient*> getBookedClients();
         void setStatus(bool status);
         void setPrice(float price);
         void setMaxCapacity(int maxCapacity);
@@ -110,7 +116,7 @@ class Room{
         float price;
         int maxCapacity;
         int currentCapacity;
-        std::vector<bookedClient> bookedClients;
+        std::vector<bookedClient*> bookedClients;
         friend void to_json(json& j, const Room& r);
         friend void from_json(const json& j, Room& r);      
 };

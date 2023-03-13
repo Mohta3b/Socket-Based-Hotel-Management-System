@@ -7,7 +7,6 @@
 #include <sstream>
 #include <vector>
 #include <string>
-#include <regex>
 #include <nlohmann/json.hpp>
 #include <arpa/inet.h>
 #include "../Server/Log.hpp"
@@ -76,10 +75,6 @@ void Server::setDate() {
   string TempDate;
   cin >> TempDate;
   // check if date is valid with regex dd-mm-yyyy
-  regex dateRegex("^(((0[1-9]|1[0-9]|2[0-8])[\\/](0[1-9]|1[012]))\
-    |((29|30|31)[\\/](0[13578]|1[02]))|((29|30)[\\/](0[4,6,9]|11)))\
-      [\\/](19|[2-9][0-9])\\d\\d$)|(^29[\\/]02[\\/](19|[2-9][0-9])\
-        (00|04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)$");
   if (!regex_match(TempDate, dateRegex)) {
     cout << "invalid date, please try again" << endl;
     logEvent(SYSTEM, 23, get_error(401));
@@ -301,7 +296,7 @@ void Server::run()
               }
             }
             // reset commandID
-            client.commandID = NOTREGISTERED;
+            client=Client(client.socket_fd,client.index);
           }
 
           // check client has left
@@ -535,9 +530,9 @@ void Server::login(Client& client, string& msg) {
   client.command = "";
   client.commandID = NOTREGISTERED;
   int errorNum = 230;
-  // if client is admin then logEvent(ADMIN, 24, get_error(errorNum),user_id) else logEvent(USER, 24, get_error(errorNum),user_id)
+  // if client is admin then logEvent(ADMIN, 6, get_error(errorNum),user_id) else logEvent(USER, 6, get_error(errorNum),user_id)
   int user_id = (client.isAdmin) ? admins[client.index].getId() : users[client.index].getId();
-  logEvent((client.isAdmin) ? ADMIN : USER, 24, get_error(errorNum), user_id);
+  logEvent((client.isAdmin) ? ADMIN : USER, 6, get_error(errorNum), user_id);
 
   msg = get_error(errorNum);
 }
@@ -546,11 +541,7 @@ void Server::logout(Client& client, string& msg) {
   int errorNum = 201;
   int user_id = (client.isAdmin) ? admins[client.index].getId() : users[client.index].getId();
   logEvent((client.isAdmin) ? ADMIN : USER, 4, get_error(errorNum), user_id);
-  client.index = NOTREGISTERED;
-  client.isAdmin = false;
-  client.argsNum = 0;
-  client.command = "";
-  client.commandID = NOTREGISTERED;
+  client = Client(client.socket_fd, NOTREGISTERED);
   msg = get_error(errorNum);
 }  
 
@@ -571,12 +562,11 @@ void Server::viewUserInfo(Client& client, string& msg) {
     + "\nUser Password: " + users[client.index].getClientPassword() 
     + "\nUser Balance: " + to_string(users[client.index].getClientBalance()) 
     + "\nUser Phone: " + users[client.index].getClientPhoneNumber() 
-    + "\nUser Address: " + users[client.index].getClientAddress();
+    + "\nUser Address: " + users[client.index].getClientAddress()
+    + "\n"
+    + "\nUser Booked Rooms: \n"
+    + users[client.index].getReservedRooms();
   }
-
-  client.argsNum = 0;
-  client.command = "";
-  client.commandID = NOTREGISTERED;
 }
 
 void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& command) {
@@ -584,28 +574,30 @@ void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& com
   // if client is admin then show booked users in each room also
   int errorNum = 110;
   int user_id = (client.isAdmin) ? admins[client.index].getId() : users[client.index].getId();
-  if (command.size() > 2 || command[1] != "empty" || command[1] != "all")
-  {
-    errorNum = 503;
-    logEvent((client.isAdmin) ? ADMIN : USER, 8, get_error(errorNum),user_id);
-    msg = get_error(errorNum);
-    return;
-  }
-  else if (command.size() == 2 && command[1] == "empty")
+  if (command.size() == 2 && command[1] == "empty")
   {
     for (int i = 0; i < rooms.size(); i++)
     {
       msg = "Available Rooms Inforamtion:\n";
-      if (rooms[i].getCurrentCapacity() == 0)
+      if (rooms[i].getStatusString() == "empty")
       {
-        msg += "Room Number: " + to_string(rooms[i].getNumber()) + "\nRoom Price: " + to_string(rooms[i].getPrice()) + "\nRoom Current Residents: " + to_string(rooms[i].getCurrentCapacity()) + "\nRoom Status: " + rooms[i].getStatusString() + " ( " + to_string(rooms[i].getMaxCapacity()-rooms[i].getCurrentCapacity()) + " / " + to_string(rooms[i].getMaxCapacity()) + " )\n";
+        msg += "Room Number: " + to_string(rooms[i].getNumber()) 
+        + "\nRoom Price: " + to_string(rooms[i].getPrice()) 
+        + "\nRoom Current Residents: " + to_string(rooms[i].getCurrentCapacity()) 
+        + "\nRoom Status: " + rooms[i].getStatusString() + " ( "
+        + to_string(rooms[i].getMaxCapacity()-rooms[i].getCurrentCapacity()) 
+        + " / " + to_string(rooms[i].getMaxCapacity()) + " )\n";
+
         // if client is admin then show booked users in each room also
         if (client.isAdmin)
         {
           msg += "***Booked Users:***\n";
           for (int j = 0; j < rooms[i].getBookedClients().size(); j++)
           {
-            msg += "User ID: " + to_string(rooms[i].getBookedClients()[j].getId()) + "\nNumber of Reserved Beds: " + to_string(rooms[i].getBookedClients()[j].getNumberofBeds()) + "\nReservervation Date: " + rooms[i].getBookedClients()[j].getReserveDate() + "\nCheck Out Date: " + rooms[i].getBookedClients()[j].getCheckoutDate() + "\n";
+            msg += "User ID: " + to_string(rooms[i].getBookedClients()[j].getId()) 
+            + "\nNumber of Reserved Beds: " + to_string(rooms[i].getBookedClients()[j].getNumberofBeds()) 
+            + "\nReservervation Date: " + rooms[i].getBookedClients()[j].getReserveDate() 
+            + "\nCheck Out Date: " + rooms[i].getBookedClients()[j].getCheckoutDate() + "\n";
           }
         } 
         msg += "\n*****************************\n";
@@ -633,12 +625,16 @@ void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& com
       msg += "\n*****************************\n";
     }
   }
+  else
+  {
+    errorNum = 503;
+    logEvent((client.isAdmin) ? ADMIN : USER, 8, get_error(errorNum),user_id);
+    msg = get_error(errorNum);
+    return;
+  }
 
   logEvent((client.isAdmin) ? ADMIN : USER, 8, get_error(errorNum),user_id);
 
-  client.argsNum = 0;
-  client.command = "";
-  client.commandID = NOTREGISTERED;
 }
 
 void editInfo(Client& client, string msg)
@@ -650,14 +646,11 @@ void editInfo(Client& client, string msg)
 // user
 void Server::bookRoom(Client& client, string msg,vector<string>& commands)
 {
-  regex dateRegex("^(((0[1-9]|1[0-9]|2[0-8])[\\/](0[1-9]|1[012]))\
-    |((29|30|31)[\\/](0[13578]|1[02]))|((29|30)[\\/](0[4,6,9]|11)))\
-      [\\/](19|[2-9][0-9])\\d\\d$)|(^29[\\/]02[\\/](19|[2-9][0-9])\
-        (00|04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)$");
-
   int errorNum;
-  // check if command contains <RoomNum> <NumOfBeds> <ReserveDate> <CheckOutDate>
-  if(!isNumber(commands[1]) || !isNumber(commands[2]) || !regex_match(commands[3],dateRegex) || !regex_match(commands[4],dateRegex)){
+  // check if command contains <RoomNum> <NumOfBeds> <ReserveDate> <CheckOutDate> and checkoutdate > reservedate
+  if(!isNumber(commands[1]) || !isNumber(commands[2]) || !regex_match(commands[3],dateRegex) || !regex_match(commands[4],dateRegex) 
+  || validRangeDate(commands[3],commands[4]))
+  {
     errorNum = 503;
     logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
     msg = get_error(errorNum);
@@ -679,10 +672,26 @@ void Server::bookRoom(Client& client, string msg,vector<string>& commands)
         msg = get_error(errorNum);
         return;
       }
-      // check if number of beds is valid
-      if(numOfBeds > (rooms[i].getMaxCapacity()-rooms[i].getCurrentCapacity()) || numOfBeds < 1)
+      // check if number of beds is available on requested date
+      string requestedCheckInDate = commands[3];
+      string requestedCheckOutDate = commands[4];
+      if(rooms[i].isAvailable(requestedCheckInDate,requestedCheckOutDate,numOfBeds))
       {
-        errorNum = 109;
+        // reserve room
+        bookedClient new
+        
+        
+        // update user balance
+        users[client.index].setClientBalance(users[client.index].getClientBalance() - numOfBeds*rooms[i].getPrice());
+
+        errorNum = 110;
+        logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+      }
+      else
+      {
+        errorNum = 107;
         logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
         msg = get_error(errorNum);
         return;
@@ -690,7 +699,8 @@ void Server::bookRoom(Client& client, string msg,vector<string>& commands)
       break;
     }
   }
-  
+  logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
+  msg = get_error(errorNum);
 }
 void Server::cancelReserve();
 void Server::leaveRoom();
@@ -702,16 +712,20 @@ void Server::viewAllUsersInfo(Client& client, string& msg)
   int errorNum = 110;
   int user_id = admins[client.index].getId();
   logEvent(ADMIN, 14, get_error(errorNum),user_id);
-  msg = "USERS:\n";
+  msg = "\t\tUSERS:\n";
   for (int i = 0; i < users.size(); i++)
   {
     msg += "User ID: " + to_string(users[i].getId()) + "\nUser Name: " + users[i].getClientName() + "\nUser Balance: " + to_string(users[i].getClientBalance()) + "\nUser Phone: " + users[i].getClientPhoneNumber() + "\nUser Address: " + users[i].getClientAddress() + "\n";
     
-    msg += "***Reserved Rooms:***\n"; // to implement this part, we need to save the reserved rooms in user class too or use pointer to BookedClients
-    for (int j = 0; j < rooms.size(); j++)
-    {
-    }
-    msg += "\n*****************************\n";
+    msg += "Reserved Rooms:\n";
+    msg += users[i].getReservedRooms();
+    msg += "*****************************\n";
+  }
+  msg += "\t\tADMINS:\n";
+  for (int i = 0; i < admins.size(); i++)
+  {
+    msg += "Admin ID: " + to_string(admins[i].getId()) + "\nAdmin Name: " + admins[i].getAdminName() + "\n";
+    msg += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
   }
 
 }

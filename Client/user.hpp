@@ -16,12 +16,14 @@ class User{
         int getClientBalance();
         std::string getClientPhoneNumber();
         std::string getClientAddress();
+        std::string getReservedRooms();
         void setId(int id);
         void setClientName(std::string clientName);
         void setClientPassword(std::string clientPassword);
         void setClientBalance(int clientBalance);
         void setClientPhoneNumber(std::string clientPhoneNumber);
         void setClientAddress(std::string clientAddress);
+        void addReservedRooms(bookedClient* bookedClient);// newwww
     private:
         int id;
         std::string clientName;
@@ -29,6 +31,7 @@ class User{
         int clientBalance;
         std::string clientPhoneNumber;
         std::string clientAddress;
+        std::vector<bookedClient*> reservedRooms;
         friend void to_json(json& j, const User& u);
         friend void from_json(const json& j, User& u);
 };
@@ -79,6 +82,18 @@ std::string User::getClientPhoneNumber(){
 
 std::string User::getClientAddress(){
     return this->clientAddress;
+}
+
+
+std::string User::getReservedRooms(){
+    std::string reservedRooms = "";
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        reservedRooms += to_string(this->reservedRooms[i]->getRoomNumber()) + " | " 
+        + to_string(this->reservedRooms[i]->getNumberofBeds()) + " | "
+        + this->reservedRooms[i]->getReserveDate() + " | "
+        + this->reservedRooms[i]->getCheckoutDate() + "\n";
+    }
+    return reservedRooms;
 }
 
 void User::setId(int id){

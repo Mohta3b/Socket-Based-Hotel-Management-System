@@ -71,6 +71,7 @@
         "variant": "cpp",
         "forward_list": "cpp",
         "codecvt": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "regex": "cpp"
     }
 }

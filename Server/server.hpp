@@ -1,6 +1,7 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <vector>
+#include <regex>
 #include "../Client/admin.hpp"
 #include "../Client/room.hpp"
 #include "../Client/user.hpp"
@@ -13,6 +14,14 @@ const string CONFIG_PATH = "config.json";
 const int NOTREGISTERED = -1;
 enum Status {PENDDING, ACCEPTED, REJECTED};
 
+const string date_pattern = "(^(((0[1-9]|1[0-9]|2[0-8])\
+[-](0[1-9]|1[012]))|((29|30|31)\
+[-](0[13578]|1[02]))|((29|30)\
+[-](0[4,6,9]|11)))\
+[-](19|[2-9][0-9])\\d\\d$)|(^29[-]02\
+[-](19|[2-9][0-9])(00|04|08|12|16|20|24|28|32|36|40|44|48|52|56|60|64|68|72|76|80|84|88|92|96)$)";
+const regex dateRegex(date_pattern);
+
 struct Client
 {
   Client() {
@@ -23,6 +32,15 @@ struct Client
     argsNum = 0;
     commandID = -1;
   }
+  Client(int socket_fd, int index){
+    this->socket_fd = socket_fd;
+    this->index = index;
+    isAdmin = false;
+    command = "";
+    argsNum = 0;
+    commandID = NOTREGISTERED;
+  }
+
   int socket_fd;
   bool isAdmin;
   int index; // save client id if sth could happen to array.
@@ -81,7 +99,7 @@ private:
   void cancelReserve();
   void leaveRoom();
   // admin 
-  void viewAllUsersInfo();
+  void viewAllUsersInfo(Client& client, string& msg);
   void passDay();
   void banGuest();
   void addRoom();

@@ -12,7 +12,7 @@ std::map<int,std::string> logs = {
     {3, "user signed up"},
     {4, "user logged out"},
     {5, "failed attempt to sign up"},
-    {6, "user signed in"},
+    {6, "user logged in"},
     {7, "request: view user info"},
     {8, "request: view rooms info"},
     {9, "request: booking"},

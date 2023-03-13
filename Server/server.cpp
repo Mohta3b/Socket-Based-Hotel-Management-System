@@ -673,10 +673,10 @@ void Server::bookRoom(Client& client, string msg,vector<string>& commands)
       // check if number of beds is available on requested date
       string requestedCheckInDate = commands[3];
       string requestedCheckOutDate = commands[4];
-      if(rooms[i].isAvailable(requestedCheckInDate,requestedCheckOutDate,numOfBeds))
+      if(rooms[i].isRoomAvailable(requestedCheckInDate,requestedCheckOutDate,numOfBeds))
       {
         // reserve room
-        bookedClient new
+        bookedClient new_client = 
         
         
         // update user balance

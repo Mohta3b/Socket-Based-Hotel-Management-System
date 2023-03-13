@@ -1,6 +1,10 @@
 #include <nlohmann/json.hpp>
 #include <string>
 #include <fstream>
+#include <ctime>
+#include <chrono>
+#include <boost/algorithm/string.hpp>
+
 using json = nlohmann::json;
 using namespace std;
 
@@ -107,8 +111,38 @@ vector<string> tokenize(string msg, char delim='\n') {
   return tokens;
 }
 
-bool validRangeDate(string d1, string d2, string systemDate) {
-  vector<string> d1_tokens = tokenize(d1, '-');
+bool validRangeDate(string date1, string date2, string systemDate = "00-00-0000") 
+{
+  struct tm tm1 = {0}, tm2 = {0}, tm3 = {0};
+  time_t time1, time2, time3;
 
-  return true;
+  // Convert date strings to time_t
+  if (strptime(systemDate.c_str(), "%d-%m-%Y", &tm1) == NULL)
+      return false;
+  time1 = mktime(&tm1);
+  if (strptime(date1.c_str(), "%d-%m-%Y", &tm2) == NULL)
+      return false;
+  time2 = mktime(&tm2);
+  if (strptime(date2.c_str(), "%d-%m-%Y", &tm3) == NULL)
+      return false;
+  time3 = mktime(&tm3);
+
+  // Check if date1 is within range
+  return difftime(time2, time1) > 0 && difftime(time3, time2) > 0;
+}
+
+time_t convertToDate(const std::string& dateString) {
+    std::tm tm = {};
+    std::istringstream ss(dateString);
+    ss >> std::get_time(&tm, "%d-%m-%Y");
+    if (ss.fail()) {
+        std::cerr << "Error parsing date string " << dateString << std::endl;
+        return -1;
+    }
+    time_t t = mktime(&tm);
+    if (t == -1) {
+        std::cerr << "Error converting date string " << dateString << " to time_t" << std::endl;
+        return -1;
+    }
+    return t;
 }

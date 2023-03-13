@@ -1,6 +1,8 @@
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
+#include <ctime>
+#include <chrono>
 
 // be careful about reading from json file cause of extra fields!!!!!!
 
@@ -114,6 +116,7 @@ class Room{
         void addClient(bookedClient* client);
         std::string getRoomInfo();
         std::string getBookedClientsString();
+        bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber);
     private:
         int room_number;
         bool status;
@@ -245,4 +248,33 @@ std::string Room::getRoomInfo(){
   " ( " + to_string(this->getMaxCapacity() - this->getCurrentCapacity()) +
     " / " + to_string(this->getMaxCapacity()) + " )\n" ;
   return msg;
+}
+
+
+bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber)
+{
+    time_t checkInTime = convertToDate(startDate);
+    time_t checkOutTime = convertToDate(endDate);
+    
+    int maxBedsBooked = 0;
+    for (time_t date = checkInTime; date <= checkOutTime; date += 86400)
+    {
+        int totalBedsBooked = 0;
+        for (const auto& reservation : bookedClients) 
+        {
+            time_t startReserveDate = convertToDate(reservation->getReserveDate());
+            time_t  endReserveDate = convertToDate(reservation->getCheckoutDate());
+            if (date >= startReserveDate && date < endReserveDate) 
+            {
+                totalBedsBooked += reservation->getNumberofBeds();
+            }
+        }
+        if (totalBedsBooked + bedsNumber > maxCapacity) 
+        {
+            return false;
+        }
+    }
+    return true;
+
+    
 }

@@ -48,8 +48,8 @@ struct Reservation {
 bool canReserveRoom(int numberOfBeds, const std::string& checkInDate, const std::string& checkOutDate, const std::vector<Reservation>& reservations) {
     int capacity = 0;
     for (const Reservation& reservation : reservations) {
-      //  std::string reservationCheckInDate = reservation.checkInDate.substr(0, 2) + "-" + reservation.checkInDate.substr(3, 2) + "-" + reservation.checkInDate.substr(6, 4);
-      // std::string reservationCheckOutDate = reservation.checkOutDate.substr(0, 2) + "-" + reservation.checkOutDate.substr(3, 2) + "-" + reservation.checkOutDate.substr(6, 4);
+       std::string reservationCheckInDate = reservation.checkInDate.substr(0, 2) + "-" + reservation.checkInDate.substr(3, 2) + "-" + reservation.checkInDate.substr(6, 4);
+      std::string reservationCheckOutDate = reservation.checkOutDate.substr(0, 2) + "-" + reservation.checkOutDate.substr(3, 2) + "-" + reservation.checkOutDate.substr(6, 4);
         
         if (checkOutDate <= reservation.checkInDate || checkInDate >= reservation.checkOutDate) {
             // The current reservation does not overlap with the requested dates, so we don't need to consider its capacity
@@ -61,12 +61,23 @@ bool canReserveRoom(int numberOfBeds, const std::string& checkInDate, const std:
 }
 
 int main() {
-    const int MAX_CAPACITY = 10;
-    std::vector<Reservation> reservations = {
-        {4, "10-03-2023", "15-03-2023"},
-        {3, "17-03-2023", "20-03-2023"}
-    };
-    bool canReserve = canReserveRoom(4, "09-03-2023", "22-03-2023", reservations);
-    std::cout << (canReserve ? "Room can be reserved" : "Room is not available") << std::endl;
+    // const int MAX_CAPACITY = 10;
+    // std::vector<Reservation> reservations = {
+    //     {4, "10-03-2023", "15-03-2023"},
+    //     {3, "17-03-2023", "20-03-2023"}
+    // };
+    std::string idate1 = "10-04-2023";
+    std::string idate2 = "17-03-2023";
+
+    idate1 = idate1.substr(6, 4) + "-" + idate1.substr(3, 2) + "-" + idate1.substr(0, 2);
+    idate2 = idate2.substr(6, 4) + "-" + idate2.substr(3, 2) + "-" + idate2.substr(0, 2);
+    std::cout << idate1 << " " << idate2 << std::endl;
+    //std::string systemDate = isystemDate.substr(0, 2) + "-" + isystemDate.substr(3, 2) + "-" + isystemDate.substr(6, 4);
+    if (idate1 > idate2) {
+      std::cout << "date1" << std::endl;
+    }
+    else {
+      std::cout << "date2222" << std::endl;
+    }
     return 0;
 }

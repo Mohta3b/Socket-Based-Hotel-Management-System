@@ -113,6 +113,10 @@ vector<string> tokenize(string msg, char delim='\n') {
 
 bool validRangeDate(string date1, string date2, string systemDate = "00-00-0000") 
 {
+  date1 = date1.substr(6, 4) + "-" + date1.substr(3, 2) + "-" + date1.substr(0, 2);
+  date2 = date2.substr(6, 4) + "-" + date2.substr(3, 2) + "-" + date2.substr(0, 2);
+  systemDate = systemDate.substr(6, 4) + "-" + systemDate.substr(3, 2) + "-" + systemDate.substr(0, 2);
+        
   struct tm tm1 = {0}, tm2 = {0}, tm3 = {0};
   time_t time1, time2, time3;
 

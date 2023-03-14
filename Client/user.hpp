@@ -1,6 +1,10 @@
+#include <ctime>
 #include <string>
 #include <nlohmann/json.hpp>
+#include "./room.hpp"
 
+
+#include "../Server/utility.hpp"
 using json = nlohmann::json;
 
 
@@ -23,7 +27,9 @@ class User{
         void setClientBalance(int clientBalance);
         void setClientPhoneNumber(std::string clientPhoneNumber);
         void setClientAddress(std::string clientAddress);
-        void addReservedRooms(bookedClient* bookedClient);// newwww
+        void addReservedRoom(bookedClient* bookedClient);
+        std::string showFutureReservations(std::string date);
+        int deleteFutureReservation(int roomNum, int bedToCancle, std::string date)
     private:
         int id;
         std::string clientName;
@@ -120,6 +126,43 @@ void User::setClientAddress(std::string clientAddress){
     this->clientAddress = clientAddress;
 }
 
-void User::addReservedRooms(bookedClient* bookedClient){
+void User::addReservedRoom(bookedClient* bookedClient){
     this->reservedRooms.push_back(bookedClient);
+}
+
+std::string User::showFutureReservations(string date){
+    time_t today= convertToDate(date);
+    std::string msg = "";
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient cur_reserv = *(reservedRooms[i]);
+        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) > 0) {
+          // it is futurre reserve
+          // show msg: roomNumber | numberofBeds | reserveDate | checkoutDate
+          msg += std::to_string(cur_reserv.getRoomNumber()) + " | "
+          + std::to_string(cur_reserv.getNumberofBeds()) + " | "
+          + cur_reserv.getReserveDate() + " | "
+          + cur_reserv.getCheckoutDate() + "\n";
+        }
+    }
+    return msg;
+}
+
+int User::deleteFutureReservation(int roomNum, int bedToCancle, std::string date) {
+    time_t today= convertToDate(date);
+    int error_num = 101;
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient& cur_reserv = *(reservedRooms[i]);
+        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) > 0) {
+          // it is futurre reserve
+          if (cur_reserv.getRoomNumber() == roomNum) {
+            error_num = 102;
+            // delete this reservation
+            if(cur_reserv.getNumberofBeds() >= bedToCancle) {
+              cur_reserv.setNumberofBeds(cur_reserv.getNumberofBeds() - bedToCancle);
+              return 110;
+            }            
+          }
+        }
+    }
+    return error_num;   
 }

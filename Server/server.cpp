@@ -253,7 +253,7 @@ void Server::run()
                 viewRoomsInfo(client, msg ,tokens);
                 break;
               case 3: // edit info
-                editInfo();
+                editInfo(client,msg, tokens);
                 break;
               default:
                 isCommon = false;
@@ -310,6 +310,7 @@ void Server::run()
               }
             }
             // reset commandID
+            
             client=Client(client.socket_fd,client.index);
           }
 
@@ -518,6 +519,7 @@ Status Server::signUp(Client& client, string& msg) {
       msg = sendMsg;
       return status;
   }
+
 void Server::login(Client& client, string& msg) {
   string sendMsg;
   vector<string> tokens;
@@ -584,7 +586,7 @@ void Server::viewUserInfo(Client& client, string& msg) {
   }
 }
 
-void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& command) {
+void Server::viewRoomsInfo(Client& client, string& msg, vector<string>& command) {
   // if command.size() == 2 and command[1] == "empty" then show available rooms else show all rooms
   // if client is admin then show booked users in each room also
   int errorNum = 110;
@@ -635,25 +637,119 @@ void Server::viewRoomsInfo(Client& client, string& msg, std::vector<string>& com
 
 }
 
-void editInfo(Client& client, string msg)
+void Server::editInfo(Client& client, string& msg, vector<string>& command)
 {
-  
-
+  // command[0] is command number; command[1] is new password; command[2] is new phone; command[3] is new address;
+  // if client is admin then check if command contains <New Password>
+  // if client is user then check if command contains <New Password> <Phone> <Address>
+  // if client is admin then logEvent(ADMIN, 5, get_error(errorNum),user_id)
+  // else logEvent(USER, 5, get_error(errorNum),user_id)
+  msg = "";
+  if(client.isAdmin) {
+    // client is admin
+    if(command.size() != 2) {
+      // command is not valid
+      int errorNum = 503;
+      logEvent(ADMIN, 11, get_error(errorNum),admins[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+    // check if new password is valid
+    if(!isValidNewPassword(command[1], admins[client.index].getAdminPassword())) {
+      // new password is not valid
+      int errorNum = 401;
+      logEvent(ADMIN, 11, get_error(errorNum),admins[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+    // change password
+    admins[client.index].setAdminPassword(command[1]);
+    // log
+    int errorNum = 312;
+    logEvent(ADMIN, 11, get_error(errorNum),admins[client.index].getId());
+    msg = get_error(errorNum);
+  } else {
+    bool sth_changed = false;
+    //  client is user
+    if(command.size() != 4) {
+      // command is not valid
+      int errorNum = 503;
+      logEvent(USER, 11, get_error(errorNum),users[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+    // i thnk we should use less log events;
+    if( command[1] != "n") {
+      if(!isValidNewPassword(command[1], users[client.index].getClientPassword())) {
+        // new password is not valid
+        int errorNum = 401;
+        logEvent(USER, 11, get_error(errorNum),users[client.index].getId());
+        msg += get_error(errorNum);
+      }else {
+        // change password
+        sth_changed = true;
+        users[client.index].setClientPassword(command[1]);
+      }
+    }
+    if(command[2] != "n") {
+      // check if phone is valid and not equal to old phone
+      if(!isPhoneNumber(command[2]) || command[2] == users[client.index].getClientPhoneNumber()) {
+        // phone is not valid
+        int errorNum = 401;
+        logEvent(USER, 11, get_error(errorNum),users[client.index].getId());
+        msg += get_error(errorNum);
+      } else {
+        // change phone
+        sth_changed = true;
+        users[client.index].setClientPhoneNumber(command[2]);
+      }
+    }
+    if(command[3] != "n") {
+      // check if address is valid and not equal to old address
+      // replace * with space in ADDRESS string
+      string address = command[3];
+      for(int i = 0; i < address.length(); i++) {
+        if(address[i] == '*') {
+          address[i] = ' ';
+        }
+      }
+      if(!isAddress(address) || address == users[client.index].getClientAddress()) {
+        // address is not valid
+        int errorNum = 401;
+        logEvent(USER, 11, get_error(errorNum),users[client.index].getId());
+        msg += get_error(errorNum);
+      } else {
+        // change address
+        sth_changed = true;
+        users[client.index].setClientAddress(address);
+      }
+    }
+    if(sth_changed) {
+      // log
+      int errorNum = 312;
+      logEvent(USER, 11, get_error(errorNum),users[client.index].getId());
+      msg += get_error(errorNum);
+    }
+  }
 }
 
 // user
-void Server::bookRoom(Client& client, string msg,vector<string>& commands)
+void Server::bookRoom(Client& client, string& msg,vector<string>& commands)
 {
   int errorNum;
-  // check if command contains <RoomNum> <NumOfBeds> <ReserveDate> <CheckOutDate> and checkoutdate > reservedate
-  if(!isNumber(commands[1]) || !isNumber(commands[2]) || !regex_match(commands[3],dateRegex) || !regex_match(commands[4],dateRegex) 
-  || validRangeDate(commands[3],commands[4]))
+  // check if command contains <RoomNum> <NumOfBeds> <ReserveDate> <CheckOutDate>
+  //  and checkoutdate > reservedate
+  if(!isNumber(commands[1]) || !isNumber(commands[2]) || !regex_match(commands[3],dateRegex)
+   || !regex_match(commands[4],dateRegex) 
+   || !validRangeDate(commands[3],commands[4],this->date))
   {
     errorNum = 503;
     logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
     msg = get_error(errorNum);
     return;
   }
+  // get number of days
+  int numOfDays = getNumOfDays(commands[3],commands[4]);
   // check if room number if valid
   errorNum = 101;
   int roomNum = stoi(commands[1]);
@@ -663,7 +759,7 @@ void Server::bookRoom(Client& client, string msg,vector<string>& commands)
     {
       //check if user balance is valid to reserve this room
       int numOfBeds = stoi(commands[2]);
-      if(numOfBeds*rooms[i].getPrice() > users[client.index].getClientBalance())
+      if(numOfDays*numOfBeds*rooms[i].getPrice() > users[client.index].getClientBalance())
       {
         errorNum = 108;
         logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
@@ -673,35 +769,90 @@ void Server::bookRoom(Client& client, string msg,vector<string>& commands)
       // check if number of beds is available on requested date
       string requestedCheckInDate = commands[3];
       string requestedCheckOutDate = commands[4];
-      if(rooms[i].isRoomAvailable(requestedCheckInDate,requestedCheckOutDate,numOfBeds))
+      if(rooms[i].isRoomAvailable(requestedCheckInDate,requestedCheckOutDate,numOfBeds, client.index))
       {
         // reserve room
-        bookedClient new_client = 
-        
-        
-        // update user balance
-        users[client.index].setClientBalance(users[client.index].getClientBalance() - numOfBeds*rooms[i].getPrice());
+        // new a booked client
+        // index is bookeedClients index in room
+        int index = rooms[i].findClientbyId(client.index);
+        if(index == -1) {
+          bookedClient* new_client = new bookedClient(users[client.index].getId(),
+          numOfBeds,requestedCheckInDate,requestedCheckOutDate,roomNum);
+          // add client to room
+          rooms[i].addBookedClient(new_client);
+          // add room to user
+          users[client.index].addReservedRoom(new_client);
+        } else { // client has canceled compeletly and want to rerasarve
+          rooms[i].setBookedClient(index, numOfBeds, requestedCheckInDate, requestedCheckOutDate);
 
+        }
+
+        // update user balance
+        users[client.index].setClientBalance(users[client.index].getClientBalance()
+         - numOfBeds*rooms[i].getPrice());
+
+        // if reserv is for today then update room status
+        if(this->date == requestedCheckInDate){
+          // update room status
+          rooms[i].updateStatus(numOfBeds);
+        }
         errorNum = 110;
         logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
         msg = get_error(errorNum);
         return;
       }
       else
-      {
+      { // room not available
         errorNum = 107;
         logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
         msg = get_error(errorNum);
         return;
       }
-      break;
+      // break definitely return before this line
     }
   }
   logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
   msg = get_error(errorNum);
 }
-void Server::cancelReserve();
-void Server::leaveRoom();
+
+void Server::cancelReserve(Client& client, string& msg,vector<string>& commands) {
+  // the client can cancel his/her reservation only before the check-in date and recieve 
+  // the half of the money; 
+  msg = "";
+  if(commands.size() == 1){
+    // show future reserved rooms
+    msg = users[client.index].showFutureReservations(this->date);
+    // log
+    logEvent(USER, 10, "successful!! send future reservations list",users[client.index].getId());
+    
+  } else if(commands.size() == 3){
+      // delete numofbeds from room
+      // check if room number and numofbeds is valid
+      if(!isNumber(commands[1]) || !isNumber(commands[2])){
+        int errorNum = 401;
+        logEvent(USER, 10, get_error(errorNum),users[client.index].getId());
+        msg = get_error(errorNum);
+      }
+      int roomNum = stoi(commands[1]);
+      int numOfBeds = stoi(commands[2]);
+      // check if room number exist
+      int errorNum = 101;   
+      errorNum = users[client.index].deleteFutureReservation(roomNum,numOfBeds,date);
+      // log
+      logEvent(USER, 10, get_error(errorNum),users[client.index].getId());
+      msg = get_error(errorNum);
+    } else {
+    // invalid command
+    int errorNum = 401;
+    logEvent(USER, 10, get_error(errorNum),users[client.index].getId());
+    msg = get_error(errorNum);
+  }
+
+}
+void Server::leaveRoom() {
+
+
+}
 
 // admin 
 void Server::viewAllUsersInfo(Client& client, string& msg)
@@ -713,7 +864,10 @@ void Server::viewAllUsersInfo(Client& client, string& msg)
   msg = "\t\tUSERS:\n";
   for (int i = 0; i < users.size(); i++)
   {
-    msg += "User ID: " + to_string(users[i].getId()) + "\nUser Name: " + users[i].getClientName() + "\nUser Balance: " + to_string(users[i].getClientBalance()) + "\nUser Phone: " + users[i].getClientPhoneNumber() + "\nUser Address: " + users[i].getClientAddress() + "\n";
+    msg += "User ID: " + to_string(users[i].getId()) + "\nUser Name: " +
+     users[i].getClientName() + "\nUser Balance: " + to_string(users[i].getClientBalance()) +
+      "\nUser Phone: " + users[i].getClientPhoneNumber() + "\nUser Address: " +
+       users[i].getClientAddress() + "\n";
     
     msg += "Reserved Rooms:\n";
     msg += users[i].getReservedRooms();
@@ -722,11 +876,13 @@ void Server::viewAllUsersInfo(Client& client, string& msg)
   msg += "\t\tADMINS:\n";
   for (int i = 0; i < admins.size(); i++)
   {
-    msg += "Admin ID: " + to_string(admins[i].getId()) + "\nAdmin Name: " + admins[i].getAdminName() + "\n";
+    msg += "Admin ID: " + to_string(admins[i].getId()) + "\nAdmin Name: " +
+     admins[i].getAdminName() + "\n";
     msg += "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n";
   }
 
 }
+
 
 
 void Server::banGuest();
@@ -736,6 +892,11 @@ void Server::deleteRoom();
 void Server::passDay();
 
 // diff commands
-void Server::editInfo();
+// void Server::editInfo();
 
-//  master set as server private property, no need because the client can use the same port
+// master set as server private property, no need because the client can use the same port
+// remember to trim each argument before concatenating in client side;
+// i have replaced ' ' with '*' in isAddress function;
+//  at client side in 5 we should check sth, first only "5", second time 5 <roomNum> <num>;
+// usr only can have one reserve as bookedClients;
+// rooms: impelement setBookedclients;

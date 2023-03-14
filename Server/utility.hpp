@@ -1,12 +1,14 @@
-#include <nlohmann/json.hpp>
 #include <string>
 #include <fstream>
 #include <ctime>
 #include <chrono>
 #include <boost/algorithm/string.hpp>
+#include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
 using namespace std;
+
+#define ONEDAYSECONDS 86400
 
 json readJsonFile(string filePath) {
   ifstream f(filePath);
@@ -32,6 +34,8 @@ bool validUsername(string str) {
 }
 bool strongPassword(string str) {
   if (str.size() < 4)
+    return false;
+  if(!isAlphaNum(str)) 
     return false;
   bool hasNum = false;
   bool hasAlpha = false;
@@ -92,7 +96,7 @@ bool isAddress(string str) {
   for (int i = 0; i < str.size(); i++)
   {
     if ((str[i] < 'a' || str[i] > 'z') && (str[i] < 'A' || str[i] > 'Z') &&
-        (str[i] < '0' || str[i] > '9') && str[i] != ' ' && str[i] != ',')
+        (str[i] < '0' || str[i] > '9') && str[i] != '*' && str[i] != ',')
       return false;
   }
   return true;
@@ -111,36 +115,39 @@ vector<string> tokenize(string msg, char delim='\n') {
   return tokens;
 }
 
-bool validRangeDate(string date1, string date2, string systemDate = "00-00-0000") 
+bool validRangeDate(string date1, string date2, string systemDate = "01-01-1800") 
 {
-  date1 = date1.substr(6, 4) + "-" + date1.substr(3, 2) + "-" + date1.substr(0, 2);
-  date2 = date2.substr(6, 4) + "-" + date2.substr(3, 2) + "-" + date2.substr(0, 2);
-  systemDate = systemDate.substr(6, 4) + "-" + systemDate.substr(3, 2) + "-" + systemDate.substr(0, 2);
+  // date1 = date1.substr(6, 4) + "-" + date1.substr(3, 2) + "-" + date1.substr(0, 2);
+  // date2 = date2.substr(6, 4) + "-" + date2.substr(3, 2) + "-" + date2.substr(0, 2);
+  // systemDate = systemDate.substr(6, 4) + "-" + systemDate.substr(3, 2) + "-" + systemDate.substr(0, 2);
         
-  struct tm tm1 = {0}, tm2 = {0}, tm3 = {0};
-  time_t time1, time2, time3;
+  struct tm tm1 = {0}, tm2 = {0}, tm0 = {0};
+  time_t time1, time2, time0;
 
   // Convert date strings to time_t
-  if (strptime(systemDate.c_str(), "%d-%m-%Y", &tm1) == NULL)
+  if (strptime(systemDate.c_str(), "%d-%m-%Y", &tm0) == NULL)
+      return false;
+  time0 = mktime(&tm0);
+  if (strptime(date1.c_str(), "%d-%m-%Y", &tm1) == NULL)
       return false;
   time1 = mktime(&tm1);
-  if (strptime(date1.c_str(), "%d-%m-%Y", &tm2) == NULL)
+  if (strptime(date2.c_str(), "%d-%m-%Y", &tm2) == NULL)
       return false;
   time2 = mktime(&tm2);
-  if (strptime(date2.c_str(), "%d-%m-%Y", &tm3) == NULL)
-      return false;
-  time3 = mktime(&tm3);
 
   // Check if date1 is within range
-  return difftime(time2, time1) > 0 && difftime(time3, time2) > 0;
+  // we should use time1-time3 and is there are euqual the it is the edge case
+  
+  return difftime(time2, time1) >= 0 && difftime(time1, time0) >= 0;
 }
 
-time_t convertToDate(const std::string& dateString) {
+time_t convertToDate(const std::string& dateString) { // time_t is an integer number of seconds from epoch
     std::tm tm = {};
     std::istringstream ss(dateString);
-    ss >> std::get_time(&tm, "%d-%m-%Y");
+    ss >> std::get_time(&tm, "%d-%m-%Y"); 
     if (ss.fail()) {
         std::cerr << "Error parsing date string " << dateString << std::endl;
+        // dont we use log?
         return -1;
     }
     time_t t = mktime(&tm);
@@ -149,4 +156,20 @@ time_t convertToDate(const std::string& dateString) {
         return -1;
     }
     return t;
+}
+
+int getNumOfDays(string date1, string date2) {
+  time_t t1 = convertToDate(date1);
+  time_t t2 = convertToDate(date2);
+  return (round((t2 - t1) / (ONEDAYSECONDS)) + 1);
+}
+
+bool isValidNewPassword(string newPassword, string oldPassword) {
+  if (!strongPassword(newPassword)) {
+    return false;
+  }
+  if (newPassword == oldPassword) {
+    return false;
+  }
+  return true;
 }

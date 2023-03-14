@@ -3,17 +3,20 @@
 #include <nlohmann/json.hpp>
 #include <ctime>
 #include <chrono>
-
+#include "../Server/utility.hpp"
 // be careful about reading from json file cause of extra fields!!!!!!
 
 using json = nlohmann::json;
 
-
+#define ONEDAYSECONDS 86400
+#define FULL true
+#define EMPTY false
 
 
 class bookedClient{
     public:
-        bookedClient(int id, int numberofBeds, std::string reserveDate, std::string checkoutDate , int roomNumber);
+        bookedClient(int id, int numberofBeds, std::string reserveDate,
+         std::string checkoutDate , int roomNumber);
         bookedClient(){};
         int getId();
         int getNumberofBeds();
@@ -100,7 +103,7 @@ class Room{
     public:
         Room(int room_number, bool status, float price, int maxCapacity, int currentCapacity , std::vector<bookedClient*> bookedClients);
         Room(){};
-        int getNumber();
+        int getNumber(); // unique
         bool getStatus();
         std::string getStatusString();
         float getPrice();
@@ -112,11 +115,15 @@ class Room{
         void setMaxCapacity(int maxCapacity);
         void setCurrentCapacity(int currentCapacity);
         void setBookedClients(std::vector<bookedClient*> bookedClients);
+        void setBookedClient();
         // add client
-        void addClient(bookedClient* client);
+        void addBookedClient(bookedClient* client);
         std::string getRoomInfo();
         std::string getBookedClientsString();
-        bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber);
+        bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId);
+        void update();
+        void updateStatus(int numOfBeds);
+        int Room::findClientbyId(int id);
     private:
         int room_number;
         bool status;
@@ -223,7 +230,7 @@ void Room::setBookedClients(std::vector<bookedClient*> bookedClients){
     this->bookedClients = bookedClients;
 }
 
-void Room::addClient(bookedClient* client) {
+void Room::addBookedClient(bookedClient* client) {
     this->bookedClients.push_back(client);
 }
 
@@ -232,8 +239,8 @@ std::string Room::getBookedClientsString(){
     for (int i = 0; i < bookedClients.size(); i++)
     {
       // cur room BookedClients;
-      msg += "User ID: " + to_string(bookedClients[i]->getId()) 
-      + "\nNumber of Reserved Beds: " + to_string(bookedClients[i]->getNumberofBeds())
+      msg += "User ID: " + std::to_string(bookedClients[i]->getId()) 
+      + "\nNumber of Reserved Beds: " + std::to_string(bookedClients[i]->getNumberofBeds())
       + "\nReservervation Date: " + bookedClients[i]->getReserveDate()
       + "\nCheck Out Date: " + bookedClients[i]->getCheckoutDate() + "\n";
     }
@@ -242,39 +249,66 @@ std::string Room::getBookedClientsString(){
 
 std::string Room::getRoomInfo(){
   std::string msg="";
-  msg += "Room Number: " + to_string(room_number) + "\nRoom Price: " +
-  to_string(price) + "\nRoom Current Residents: " +
-  to_string(currentCapacity) + "\nRoom Status: " + this->getStatusString() + 
-  " ( " + to_string(this->getMaxCapacity() - this->getCurrentCapacity()) +
-    " / " + to_string(this->getMaxCapacity()) + " )\n" ;
+  msg += "Room Number: " + std::to_string(room_number) + "\nRoom Price: " +
+  std::to_string(price) + "\nRoom Current Residents: " +
+  std::to_string(currentCapacity) + "\nRoom Status: " + this->getStatusString() + 
+  " ( " + std::to_string(this->getMaxCapacity() - this->getCurrentCapacity()) +
+    " / " + std::to_string(this->getMaxCapacity()) + " )\n" ;
   return msg;
 }
 
 
-bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber)
+bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId)
 {
+    // is repeated is wrong
+    int index = findClientbyId(clientId);
+    if( index != -1 && bookedClients[index]->getNumberofBeds() != 0)
+        return false;
     time_t checkInTime = convertToDate(startDate);
     time_t checkOutTime = convertToDate(endDate);
-    
-    int maxBedsBooked = 0;
-    for (time_t date = checkInTime; date <= checkOutTime; date += 86400)
+    int size = round(difftime(checkOutTime,checkInTime) / ONEDAYSECONDS);
+    size++;
+    vector<int> dates_res_num(size,bedsNumber);
+
+    for (const auto& reservation : bookedClients) 
     {
-        int totalBedsBooked = 0;
-        for (const auto& reservation : bookedClients) 
-        {
-            time_t startReserveDate = convertToDate(reservation->getReserveDate());
-            time_t  endReserveDate = convertToDate(reservation->getCheckoutDate());
-            if (date >= startReserveDate && date < endReserveDate) 
-            {
-                totalBedsBooked += reservation->getNumberofBeds();
-            }
-        }
-        if (totalBedsBooked + bedsNumber > maxCapacity) 
-        {
-            return false;
+        time_t startReserveDate = convertToDate(reservation->getReserveDate());
+        // find index by regarding checkInTime as base
+        int index1 = round(difftime(startReserveDate,checkInTime) / ONEDAYSECONDS);
+        time_t  endReserveDate = convertToDate(reservation->getCheckoutDate());
+        int index2 = round(difftime(endReserveDate,checkInTime) / ONEDAYSECONDS);
+        if( index1 >=0 && index1 <= (size-1)) {
+            int beds = reservation->getNumberofBeds();
+            while(index1 <= (size-1) && index1 <= index2) {
+                dates_res_num[index1] += beds;
+                if (dates_res_num[index1] > maxCapacity) {
+                    return false;
+                }
+                index1++;
+            } 
         }
     }
-    return true;
+    return true;    
+}
 
-    
+void Room::update() {
+
+}
+void Room::updateStatus(int numOfBeds) {
+    if (currentCapacity + numOfBeds == maxCapacity) {
+        status = FULL;
+    }
+    else {
+        status = EMPTY;
+    }
+}
+
+int Room::findClientbyId(int id) {
+    for (int i = 0; i < bookedClients.size(); i++)
+    {
+        if (bookedClients[i]->getId() == id) {
+            return i;
+        }
+    }
+    return -1;
 }

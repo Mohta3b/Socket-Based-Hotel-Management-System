@@ -93,7 +93,7 @@ private:
   void logout(Client& client, string& msg);
   void viewUserInfo(Client& client, string& msg);
   void viewRoomsInfo(Client& client, string& msg, std::vector<string>& command);
-  void editInfo();
+  void editInfo(Client& client, string& msg, vector<string>& command);
   // user
   void bookRoom();
   void cancelReserve();
@@ -105,6 +105,8 @@ private:
   void addRoom();
   void modifyRoom();
   void deleteRoom();
+  void bookRoom(Client& client, string& msg,vector<string>& commands);
+  void cancelReserve(Client& client, string& msg,vector<string>& commands);
 public:
   void run();
   // constructor

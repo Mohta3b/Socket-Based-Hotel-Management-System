@@ -38,7 +38,12 @@
 #include <string>
 #include <iostream>
 #include <stdexcept>
-
+#include <fstream>
+#include <sstream>
+#include <ctime>
+#include <chrono>
+#include <boost/algorithm/string.hpp>
+#include <nlohmann/json.hpp>
 struct Reservation {
     int numberOfBeds;
     std::string checkInDate;
@@ -59,7 +64,17 @@ bool canReserveRoom(int numberOfBeds, const std::string& checkInDate, const std:
     }
     return capacity + numberOfBeds <= 10;
 }
-
+std::vector<std::string> tokenize(std::string msg, char delim='\n') {
+  boost::trim(msg);
+  //tokenize msg to username password
+  std::stringstream ss(msg);
+  std::string token;
+  std::vector<std::string> tokens;
+  while (getline(ss, token, delim)) {
+    tokens.push_back(token);
+  }
+  return tokens;
+}
 int main() {
     // // const int MAX_CAPACITY = 10;
     // // std::vector<Reservation> reservations = {
@@ -81,7 +96,19 @@ int main() {
     // }
     // return 0;
     std::string ss,ss1,ss2;
-    std::cin >> ss >> ss1 >> ss2;
-    std::cout << ss <<ss1 <<ss2 << std::endl;
+    std::stringstream ss3;
+    // read input from cin until enter is pressed then exit the while loop
+    std::getline(std::cin, ss);
+    while(ss.find("  ") != std::string::npos) {
+        ss.erase(ss.find("  "), 1);
+    }
+    std::cout << ss << std::endl;
+    
+    std::vector<std::string> args = tokenize(ss, ' ');
+    //std::cout << args[0] << std::endl;
+    std::cout << args.size() << std::endl;
+
+    // std::cin >> ss >> ss1 >> ss2;
+    // std::cout << ss <<ss1 <<ss2 << std::endl;
 
 }

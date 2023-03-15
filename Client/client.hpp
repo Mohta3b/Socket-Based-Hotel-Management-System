@@ -56,8 +56,9 @@ class Client {
     // 
   public:
     void showCommandHelp(int commandId);
-
+    string RecieveFromServer();
     void showMenu();
+    void getCommand(string Help, int errorCode);
     Client(string configFile) {
       // read config file
       json config = readJsonFile(configFile);

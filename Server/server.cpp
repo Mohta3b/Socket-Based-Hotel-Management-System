@@ -494,6 +494,9 @@ void Server::addUser(string args) {
   int uniqueID = findUniqueID();
   User user(uniqueID, tokens[0], tokens[1], stoi(tokens[2]),
    tokens[3], tokens[4]);
+  users.push_back(user);
+  // LOG
+  logEvent(USER, 3, "user " + tokens[0] + " added", user.getId());
 }
 // find room by name
 int Server::getRoomIndexByRoomNum(int roomNum) {
@@ -602,11 +605,11 @@ Status Server::signUp(Client& client, string& msg) {
           return status;
         }
         status = Status::ACCEPTED;
-        sendMsg = get_error(200);
+        sendMsg = get_error(231);
         break;
       }
       client.argsNum++;
-      client.command += (msg+"\n"); //"  2232\n std\nf g l l \ndfggfh\ndfg  \n";
+      client.command += (msg+"\n");
       msg = sendMsg;
       return status;
   }

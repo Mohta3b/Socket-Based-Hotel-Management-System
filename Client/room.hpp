@@ -9,8 +9,8 @@
 using json = nlohmann::json;
 
 #define ONEDAYSECONDS 86400
-#define FULL true
-#define EMPTY false
+#define FULL 1
+#define EMPTY 0
 
 
 class bookedClient{
@@ -101,7 +101,8 @@ void bookedClient::setRoomNumber(int roomNumber){
 
 class Room{
     public:
-        Room(int room_number, bool status, float price, int maxCapacity, int currentCapacity , std::vector<bookedClient*> bookedClients);
+        Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient*> bookedClients);
+        Room(int number, int maxCapacity , int price);
         Room(){};
         int getNumber(); // unique
         bool getStatus();
@@ -123,11 +124,15 @@ class Room{
         bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId);
         void update();
         void updateStatus(int numOfBeds);
-        int Room::findClientbyId(int id);
+        int findClientbyId(int id);
+        void updateRoomCapacity(int numOfBeds,bool increase = true);
+        void deleteBookedClient(int id);
+        void deleteAllBookedClientsbyDate(std::string date);
+        bool hasReservation();
     private:
         int room_number;
         bool status;
-        float price;
+        int price;
         int maxCapacity;
         int currentCapacity;
         std::vector<bookedClient*> bookedClients;
@@ -178,6 +183,13 @@ Room::Room(int number, bool status, float price, int maxCapacity, int currentCap
     this->bookedClients = bookedClients;
 }
 
+Room::Room(int number, int maxCapacity, int price){
+    this->room_number = number;
+    this->status = EMPTY;
+    this->price = price;
+    this->maxCapacity = maxCapacity;
+    this->currentCapacity = EMPTY;
+}
 int Room::getNumber(){
     return this->room_number;
 }
@@ -311,4 +323,43 @@ int Room::findClientbyId(int id) {
         }
     }
     return -1;
+}
+
+void Room::updateRoomCapacity(int numOfBeds,bool increase = true) {
+    if (increase) 
+    {
+        currentCapacity += numOfBeds;
+    }
+    else 
+    {
+        currentCapacity -= numOfBeds;
+    }
+    updateStatus(0);
+}
+
+void Room::deleteBookedClient(int id) {
+    int index = findClientbyId(id);
+    if (index != -1) {
+        bookedClients.erase(bookedClients.begin() + index);
+    }
+}
+
+void Room::deleteAllBookedClientsbyDate(std::string date) 
+{
+    date = date.substr(6, 4) + "-" + date.substr(3, 2) + "-" + date.substr(0, 2);
+    for (int i = 0; i < bookedClients.size(); i++)
+    {
+        std::string checkInDate = bookedClients[i]->getReserveDate();
+        checkInDate = checkInDate.substr(6, 4) + "-" + checkInDate.substr(3, 2) + "-" + checkInDate.substr(0, 2);
+        if (checkInDate <= date) 
+        {
+            bookedClients.erase(bookedClients.begin() + i);
+            i--;
+        }
+    }
+}
+
+bool Room::hasReservation()
+{
+    return bookedClients.size() > 0;
 }

@@ -74,7 +74,7 @@ void Server::readRoomsUserFiles(string roomsPath = "RoomsInfo.json", string user
         
         if (client->getId() == user.getId())
         {
-          user.addReservedRooms(client);
+          user.addReservedRoom(client);
         }
       }
     }
@@ -265,19 +265,19 @@ void Server::run()
                 switch (commandNum)
                 {
                 case 4: // view all usersInfo
-                  viewAllUsersInfo();
+                  viewAllUsersInfo(client, msg);
                   break;
                 case 5: // banGuest
-                  banGuest();
+                  banGuestsFromRoom(client, msg, tokens);
                   break;
                 case 6: // addroom
-                  addRoom();
+                  addRoom(client, msg, tokens);
                   break;
                 case 7: // modify room
-                  modifyRoom();
+                  modifyRoom(client, msg, tokens);
                   break;
                 case 8: // delete room
-                  deleteRoom();
+                  deleteRoom(client, msg, tokens);
                   break;
                 case 9: // pass day
                   passDay();
@@ -293,13 +293,13 @@ void Server::run()
                 switch (commandNum)
                 {
                 case 4: // book room
-                  bookRoom();
+                  bookRoom(client, msg, tokens);
                   break;
                 case 5: // cancel reserve
-                  cancelReserve();
+                  cancelReserve(client, msg, tokens);
                   break;
                 case 6: // leave room
-                  leaveRoom();
+                  leaveRoom(client, msg, tokens);
                   break;
                 default: // error command
                   msg = get_error(503);
@@ -849,9 +849,44 @@ void Server::cancelReserve(Client& client, string& msg,vector<string>& commands)
   }
 
 }
-void Server::leaveRoom() {
+void Server::leaveRoom(Client& client, string& msg,vector<string>& commands) 
+{
+    // check if room number is valid
+    if(!isNumber(commands[1]))
+    {
+      int errorNum = 401;
+      logEvent(USER, 12, get_error(errorNum),users[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+    int roomNum = stoi(commands[1]);
+    // check if room number exist
+    int errorNum = 503;
+    for(int i=0; i<rooms.size() ; i++)
+    {
+      if(rooms[i].getNumber()==roomNum)
+      {
+        // check if user is settling in this room at this moment
+        // check if date is between checkin and checkout
+        errorNum = 102;
+        if(users[client.index].isRoomReservedNow(roomNum,this->date))
+        {
+          errorNum = 413;
+          // update room capacity
+          rooms[i].updateRoomCapacity(users[client.index].getReservedRoomNumOfBeds(roomNum,this->date),false);
+          // delete room from user
+          users[client.index].deleteReservedRoom(roomNum,this->date);
+          // delete room from room
+          rooms[i].deleteBookedClient(client.index);
 
-
+          logEvent(USER, 12, get_error(errorNum),users[client.index].getId());
+          msg = get_error(errorNum);
+          return;
+        }
+      }
+    }
+    logEvent(USER, 12, get_error(errorNum),users[client.index].getId());
+    msg = get_error(errorNum);
 }
 
 // admin 
@@ -885,10 +920,198 @@ void Server::viewAllUsersInfo(Client& client, string& msg)
 
 
 
-void Server::banGuest();
-void Server::addRoom();
-void Server::modifyRoom();
-void Server::deleteRoom();
+void Server::banGuestsFromRoom(Client& client, string& msg,vector<string>& commands)
+{
+  // coomand[1] is room number. by this command admin can remove all guests from a room
+  // check if room number is valid
+  if(!isNumber(commands[1]))
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 16, get_error(errorNum),admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int roomNum = stoi(commands[1]);
+  // check if room number exist
+  int errorNum = 101;
+  for(int i=0; i<rooms.size() ; i++)
+  {
+    if(rooms[i].getNumber()==roomNum)
+    {
+        // update room capacity
+        rooms[i].updateRoomCapacity(rooms[i].getMaxCapacity(),false);
+        // delete room from users
+        for(int j=0; j<users.size(); j++)
+        {
+          users[j].deleteReservedRoom(roomNum,this->date);
+        }
+        // delete room from rooms
+        rooms[i].deleteAllBookedClientsbyDate(this->date);
+        errorNum = 413;
+        logEvent(ADMIN, 16, get_error(errorNum) + to_string(roomNum),admins[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+    }
+  }
+  logEvent(ADMIN, 16, get_error(errorNum),admins[client.index].getId());
+  msg = get_error(errorNum);
+}
+
+void Server::addRoom(Client& client, string& msg,vector<string>& commands)
+{
+  // <RoomNum> <Max Capacity> <Price>
+  // add room to rooms and check whether it is valid or not and room number is unique
+  // if valid add it to rooms
+
+  // check if room number is valid
+  if(!isNumber(commands[1]))
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 17, get_error(errorNum) + " -> room number",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int roomNum = stoi(commands[1]);
+  // check if room number exist
+  int errorNum = 104; // if add was successful
+  for(int i=0; i<rooms.size() ; i++)
+  {
+    if(rooms[i].getNumber()==roomNum)
+    {
+      errorNum = 111;
+      logEvent(ADMIN, 17, get_error(errorNum),admins[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+  }
+  // check if max capacity is valid
+  if(!isNumber(commands[2]))
+  {
+    errorNum = 503;
+    logEvent(ADMIN, 17, get_error(errorNum) + " -> max capacity",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int maxCapacity = stoi(commands[2]);
+  // check if price is valid
+  if(!isNumber(commands[3]))
+  {
+    errorNum = 503;
+    logEvent(ADMIN, 17, get_error(errorNum) + " -> price",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int price = stoi(commands[3]);
+  // add room to rooms
+  Room room(roomNum,maxCapacity,price);
+  rooms.push_back(room);
+
+  logEvent(ADMIN, 17, get_error(errorNum),admins[client.index].getId());
+  msg = get_error(errorNum);
+}
+
+
+void Server::modifyRoom(Client& client, string& msg,vector<string>& commands)
+{
+  // <RoomNum> <Max Capacity> <Price>
+  // modify changes a room configuration if it is valid
+
+  // check if room number is valid
+  if(!isNumber(commands[1]))
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 18, get_error(errorNum) + " -> room number",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int roomNum = stoi(commands[1]);
+  // check if room number exist
+  int errorNum = 101;
+  for(int i=0; i<rooms.size() ; i++)
+  {
+    if(rooms[i].getNumber()==roomNum)
+    {
+      // check if max capacity is valid
+      if(!isNumber(commands[2]))
+      {
+        errorNum = 503;
+        logEvent(ADMIN, 18, get_error(errorNum) + " -> max capacity",admins[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+      }
+      int maxCapacity = stoi(commands[2]);
+      // check whether max capaviry is < current capacity and return error 109 if not
+      if(maxCapacity < rooms[i].getCurrentCapacity())
+      {
+        errorNum = 109;
+        logEvent(ADMIN, 18, get_error(errorNum),admins[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+      }
+      // check if price is valid
+      if(!isNumber(commands[3]))
+      {
+        errorNum = 503;
+        logEvent(ADMIN, 18, get_error(errorNum) + " -> price",admins[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+      }
+      int price = stoi(commands[3]);
+      // modify room
+      rooms[i].setPrice(price);
+      rooms[i].setMaxCapacity(maxCapacity);
+      errorNum = 105;
+      logEvent(ADMIN, 18, get_error(errorNum),admins[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+  }
+  logEvent(ADMIN, 18, get_error(errorNum),admins[client.index].getId());
+  msg = get_error(errorNum);
+}
+void Server::deleteRoom(Client& client, string& msg,vector<string>& commands)
+{
+  // <RoomNum>
+  // delete room from rooms if it is valid and if it was not reserved in any date
+
+  // check if room number is valid
+  if(!isNumber(commands[1]))
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 19, get_error(errorNum) + " -> room number",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
+  int roomNum = stoi(commands[1]);
+  // check if room number exist
+  int errorNum = 101;
+  for(int i=0; i<rooms.size() ; i++)
+  {
+    if(rooms[i].getNumber()==roomNum)
+    {
+      // check if room was reserved in any date
+      if(rooms[i].hasReservation())
+      {
+        errorNum = 109;
+        logEvent(ADMIN, 19, get_error(errorNum),admins[client.index].getId());
+        msg = get_error(errorNum);
+        return;
+      }
+      // delete room from rooms
+      rooms.erase(rooms.begin()+i);
+
+      errorNum = 106;
+      logEvent(ADMIN, 19, get_error(errorNum),admins[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
+  }
+  logEvent(ADMIN, 19, get_error(errorNum),admins[client.index].getId());
+  msg = get_error(errorNum);
+
+}
+
+
 void Server::passDay();
 
 // diff commands

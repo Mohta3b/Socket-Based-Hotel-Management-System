@@ -29,7 +29,10 @@ class User{
         void setClientAddress(std::string clientAddress);
         void addReservedRoom(bookedClient* bookedClient);
         std::string showFutureReservations(std::string date);
-        int deleteFutureReservation(int roomNum, int bedToCancle, std::string date)
+        int deleteFutureReservation(int roomNum, int bedToCancle, std::string date);
+        bool isRoomReservedNow(int roomNum, std::string date);
+        int getReservedRoomNumOfBeds(int roomNum, std::string date);
+        void deleteReservedRoom(int roomNum, std::string date);
     private:
         int id;
         std::string clientName;
@@ -165,4 +168,46 @@ int User::deleteFutureReservation(int roomNum, int bedToCancle, std::string date
         }
     }
     return error_num;   
+}
+
+bool User::isRoomReservedNow(int roomNum, std::string date) {
+    time_t today= convertToDate(date);
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient& cur_reserv = *(reservedRooms[i]);
+        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) <= 0) {
+          // user is in this room now
+          if (cur_reserv.getRoomNumber() == roomNum) {
+            return true;
+          }
+        }
+    }
+    return false;
+}
+
+int User::getReservedRoomNumOfBeds(int roomNum, std::string date) {
+    time_t today= convertToDate(date);
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient& cur_reserv = *(reservedRooms[i]);
+        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) <= 0) {
+          // user is in this room now
+          if (cur_reserv.getRoomNumber() == roomNum) {
+            return cur_reserv.getNumberofBeds();
+          }
+        }
+    }
+    return 0;
+}
+
+void User::deleteReservedRoom(int roomNum, std::string date) {
+    time_t today= convertToDate(date);
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient& cur_reserv = *(reservedRooms[i]);
+        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) <= 0) {
+          // user is in this room now
+          if (cur_reserv.getRoomNumber() == roomNum) {
+            this->reservedRooms.erase(this->reservedRooms.begin() + i);
+            return;
+          }
+        }
+    }
 }

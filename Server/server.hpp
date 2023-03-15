@@ -95,18 +95,16 @@ private:
   void viewRoomsInfo(Client& client, string& msg, std::vector<string>& command);
   void editInfo(Client& client, string& msg, vector<string>& command);
   // user
-  void bookRoom();
-  void cancelReserve();
-  void leaveRoom();
+  void bookRoom(Client& client, string& msg,vector<string>& commands);
+  void cancelReserve(Client& client, string& msg,vector<string>& commands);
+  void leaveRoom(Client& client, string& msg,vector<string>& commands);
   // admin 
   void viewAllUsersInfo(Client& client, string& msg);
   void passDay();
-  void banGuest();
-  void addRoom();
-  void modifyRoom();
-  void deleteRoom();
-  void bookRoom(Client& client, string& msg,vector<string>& commands);
-  void cancelReserve(Client& client, string& msg,vector<string>& commands);
+  void banGuestsFromRoom(Client& client, string& msg,vector<string>& commands);
+  void addRoom(Client& client, string& msg,vector<string>& commands);
+  void modifyRoom(Client& client, string& msg,vector<string>& commands);
+  void deleteRoom(Client& client, string& msg,vector<string>& commands);
 public:
   void run();
   // constructor

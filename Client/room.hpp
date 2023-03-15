@@ -291,7 +291,6 @@ bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsN
     int size = round(difftime(checkOutTime,checkInTime) / ONEDAYSECONDS);
     size++;
     vector<int> dates_res_num(size,bedsNumber);
-
     for (const auto& reservation : bookedClients) 
     {
         time_t startReserveDate = convertToDate(reservation->getReserveDate());
@@ -299,15 +298,16 @@ bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsN
         int index1 = round(difftime(startReserveDate,checkInTime) / ONEDAYSECONDS);
         time_t  endReserveDate = convertToDate(reservation->getCheckoutDate());
         int index2 = round(difftime(endReserveDate,checkInTime) / ONEDAYSECONDS);
-        if( index1 >=0 && index1 <= (size-1)) {
-            int beds = reservation->getNumberofBeds();
-            while(index1 <= (size-1) && index1 <= index2) {
-                dates_res_num[index1] += beds;
-                if (dates_res_num[index1] > maxCapacity) {
-                    return false;
-                }
-                index1++;
-            } 
+
+        int start,end;
+        start = max(index1,0);
+        end =  min(index2,size-1);
+        for(int i = start; i <= end; i++)
+        {
+            dates_res_num[i] += reservation->getNumberofBeds();
+            if (dates_res_num[i] > maxCapacity) {
+                return false;
+            }
         }
     }
     return true;    
@@ -393,5 +393,6 @@ void Room::passDay(std::string date) {
       i--;
     }
   }
-
 }
+
+

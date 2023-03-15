@@ -60,6 +60,8 @@ private:
   int port;
   string date;
   string host_name;
+  string roomsPath;
+  string usersPath;
   int max_clients;
   int serverFd;
   vector<Admin> admins;
@@ -106,6 +108,7 @@ private:
   void modifyRoom(Client& client, string& msg,vector<string>& commands);
   void deleteRoom(Client& client, string& msg,vector<string>& commands);
   int getRoomIndexByRoomNum(int roomNum);
+  void writeJsonFile();
   
 public:
   void run();

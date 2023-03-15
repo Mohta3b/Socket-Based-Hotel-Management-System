@@ -61,7 +61,9 @@ int Server::setupServerSocket()
 void Server::readRoomsUserFiles(string roomsPath = "RoomsInfo.json", string usersPath = "UsersInfo.json")
 {
   json rooms = readJsonFile(roomsPath);
+  this->roomsPath = roomsPath;
   json clients = readJsonFile(usersPath);
+  this->usersPath = usersPath;
   this->users = clients["users"];
   this->rooms = rooms["rooms"];
   this->admins = clients["admins"];
@@ -145,6 +147,21 @@ void Server::run()
         { // stdin
           read(0, buffer, BUFFER_SIZE);
           buffer[strlen(buffer) - 1] = '\0';
+          msg = string(buffer);
+          if(msg == "exit") {
+            logEvent(SYSTEM, 0, "Server is shutting down");
+            // wrtie to json files
+            writeJsonFile();
+            // send msg to all sockets
+            for (int j = 0; j < FD_SETSIZE; j++)
+            {
+              if (FD_ISSET(j, &master_set))
+              {
+                send(j, "Server is shutting down", 23, 0);
+              }
+            }
+            exit(0);
+          }
         }
         else if (i == serverFd)
         { // clients(user or admin), new clientSocket wants to connect,
@@ -167,23 +184,42 @@ void Server::run()
           msg.clear();
           if ((byteCount = recv(i, buffer, BUFFER_SIZE, 0)) == -1)
           {
-            cout << i << "is hooooshdoooded no to rcv from" << endl;
+            // client has diconnected (close the console), add a log;
+            cout << "rcv go -1 from: " << i << endl;
             FD_CLR(i, &master_set);
+            // clear online client
+            Client client = findClient(i);
+            if (client.index != NOTREGISTERED)
+            {
+              onlineClients.erase(onlineClients.begin() + client.index);
+            }
             continue;
           }
-          msg = string(buffer);
-          if(msg.size() == 0) {
-              continue;
+          if( byteCount == 0) {
+            cout << "rcv go 0 from: " << i << endl;
+            FD_CLR(i, &master_set);
+            // clear online client
+            Client client = findClient(i);
+            if (client.index != NOTREGISTERED)
+            {
+              onlineClients.erase(onlineClients.begin() + client.index);
+            }
+            continue;
           }
-          //  if there is none then recv return 0 i guess so we
+          // the little code below is the same as above
+          // if(msg.size() == 0) {
+          //     continue;
+          // }
+          //  if there is no one then recv return 0 i guess so we
           // should consider this.
+          msg = string(buffer);
           // handle commands
-
           // client hasnt logged in yet
           Client client = findClient(i);
           if (client.index == NOTREGISTERED)
           {
             if (client.commandID == NOTREGISTERED) {
+              // sockekt recognition and setting commandID if correct
               client.socket_fd = i;
               client.isAdmin = false; 
               if( msg == "0")
@@ -232,9 +268,10 @@ void Server::run()
                 commandNum = stoi(tokens[0]);
               } catch (...) {             
                 msg = get_error(503);
-                logEvent(SYSTEM, 13, msg);
+                // logEvent(SYSTEM, 13, msg);
                 client.commandID = NOTREGISTERED;
-                continue;
+                commandNum = NOTREGISTERED;
+                // continue;
               }
               client.commandID = commandNum;
             } else {
@@ -310,22 +347,49 @@ void Server::run()
               }
             }
             // reset commandID
-            
             client=Client(client.socket_fd,client.index);
           }
-
           // check client has left
-          msg = string(buffer);
-          msg += " server is very happy tp meet you\n";
-          cout << msg << "\t is to send to clinet\n"
-               << endl;
-          if ((byteCount = send(i, msg.c_str(), msg.length() + 1, 0)) == -1)
+          // cout << msg.substr(0,50) << "\t is to send to clinet\n"<< endl; debug
+          // send size of msg first to the client
+          int msgSize = msg.length() + 1;
+          // convert int to  constant c string
+          // const char *msgSizeStr = to_string(msgSize).c_str();          
+          if ((byteCount = send(i, (char*)&msgSize, sizeof(int), 0)) == -1)
           {
-            cout << i << " is hooooshdoooded no one to send to" << endl;
+            cout << i << ": has error got -1 on send" << endl;
             FD_CLR(i, &master_set);
+            // clear online client
+            Client client = findClient(i);
+            if (client.index != NOTREGISTERED)
+            {
+              onlineClients.erase(onlineClients.begin() + client.index);
+            }
             continue;
           }
-
+          if ((byteCount = send(i, msg.c_str(), msg.length() + 1, 0)) == -1)
+          {
+            cout << i << ": has error got -1 on send" << endl;
+            FD_CLR(i, &master_set);
+            // clear online client
+            Client client = findClient(i);
+            if (client.index != NOTREGISTERED)
+            {
+              onlineClients.erase(onlineClients.begin() + client.index);
+            }
+            continue;
+          }
+          if( byteCount == 0) {
+            cout << "send got 0 from: " << i << endl;
+            FD_CLR(i, &master_set);
+            // clear online client
+            Client client = findClient(i);
+            if (client.index != NOTREGISTERED)
+            {
+              onlineClients.erase(onlineClients.begin() + client.index);
+            }
+            continue;
+          }
         }
       }
     }
@@ -441,6 +505,24 @@ int Server::getRoomIndexByRoomNum(int roomNum) {
     }
     return -1;
 }
+void Server::writeJsonFile() {
+  // overwrite to json file
+  // overwrite rooms to file
+  ofstream o(this->roomsPath);
+  json j;
+  j["rooms"] = rooms;
+  o << setw(4) << j << endl;
+  o.close();
+  // clear j
+  j.clear();
+  // overwrite admins and users to file
+  o.open(this->usersPath);
+  j["users"] = users;
+  j["admins"] = admins;
+  o << setw(4) << j << endl;
+  o.close();
+}
+
 // commands
 // client
 Status Server::signUp(Client& client, string& msg) {
@@ -549,17 +631,19 @@ void Server::login(Client& client, string& msg) {
     msg = get_error(errorNum);
     return;
   }
+  // client has logged in successfully
   client.index = cur_client.index;
   client.isAdmin = cur_client.isAdmin;
   client.argsNum = 0;
   client.command = "";
   client.commandID = NOTREGISTERED;
   int errorNum = 230;
-  // if client is admin then logEvent(ADMIN, 6, get_error(errorNum),user_id) else logEvent(USER, 6, get_error(errorNum),user_id)
+  // if client is admin then logEvent(ADMIN, 6, get_error(errorNum),user_id)
+  //  else logEvent(USER, 6, get_error(errorNum),user_id)
   int user_id = (client.isAdmin) ? admins[client.index].getId() : users[client.index].getId();
   logEvent((client.isAdmin) ? ADMIN : USER, 6, get_error(errorNum), user_id);
-
-  msg = get_error(errorNum);
+  
+  msg = "successful " + to_string(client.isAdmin);
   
 }
 
@@ -1180,12 +1264,8 @@ void Server::passDay(Client& client, string& msg,vector<string>& commands) {
   msg = get_error(errorNum);
 }
 
-// diff commands
-// void Server::editInfo();
 
-// master set as server private property, no need because the client can use the same port
+
+//  at client side in 5 we should check sth,
+//  first only "5", second time 5 <roomNum> <num>;
 // remember to trim each argument before concatenating in client side;
-// i have replaced ' ' with '*' in isAddress function;
-//  at client side in 5 we should check sth, first only "5", second time 5 <roomNum> <num>;
-// usr only can have one reserve as bookedClients;
-// rooms: impelement setBookedclients;

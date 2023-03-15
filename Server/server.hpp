@@ -100,11 +100,13 @@ private:
   void leaveRoom(Client& client, string& msg,vector<string>& commands);
   // admin 
   void viewAllUsersInfo(Client& client, string& msg);
-  void passDay();
+  void passDay(Client& client, string& msg,vector<string>& commands);
   void banGuestsFromRoom(Client& client, string& msg,vector<string>& commands);
   void addRoom(Client& client, string& msg,vector<string>& commands);
   void modifyRoom(Client& client, string& msg,vector<string>& commands);
   void deleteRoom(Client& client, string& msg,vector<string>& commands);
+  int getRoomIndexByRoomNum(int roomNum);
+  
 public:
   void run();
   // constructor

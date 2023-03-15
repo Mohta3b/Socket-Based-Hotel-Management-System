@@ -28,13 +28,13 @@ class bookedClient{
         void setReserveDate(std::string reserveDate);
         void setCheckoutDate(std::string checkoutDate);
         void setRoomNumber(int roomNumber);
-
+        int getReserveDuration();
     private:
-        int id;
+        int id; // unique client id
         int numberofBeds;
         std::string reserveDate;
         std::string checkoutDate;
-        int roomNumber;
+        int roomNumber; // unique
         friend void to_json(json& j, const bookedClient& bc);
         friend void from_json(const json& j, bookedClient& bc);      
 };
@@ -99,6 +99,12 @@ void bookedClient::setRoomNumber(int roomNumber){
     this->roomNumber = roomNumber;
 }
 
+int bookedClient::getReserveDuration() {
+    getNumOfDays( this->reserveDate, this->checkoutDate);
+}
+
+
+////////////////////////////// Room Class //////////////////////////////
 class Room{
     public:
         Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient*> bookedClients);
@@ -124,11 +130,14 @@ class Room{
         bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId);
         void update();
         void updateStatus(int numOfBeds);
-        int findClientbyId(int id);
-        void updateRoomCapacity(int numOfBeds,bool increase = true);
+        int findClientbyId(int userId);
+        void updateRoomCapacity(int numOfBeds);
         void deleteBookedClient(int id);
         void deleteAllBookedClientsbyDate(std::string date);
         bool hasReservation();
+        void editBookedClient(int bookedClientindex, int numOfBeds,
+          std::string startDate, std::string endDate);
+        void passDay(std::string date);
     private:
         int room_number;
         bool status;
@@ -232,6 +241,7 @@ void Room::setPrice(float price){
 
 void Room::setMaxCapacity(int maxCapacity){
     this->maxCapacity = maxCapacity;
+    updateStatus(0);
 }
 
 void Room::setCurrentCapacity(int currentCapacity){
@@ -325,21 +335,15 @@ int Room::findClientbyId(int id) {
     return -1;
 }
 
-void Room::updateRoomCapacity(int numOfBeds,bool increase = true) {
-    if (increase) 
-    {
-        currentCapacity += numOfBeds;
-    }
-    else 
-    {
-        currentCapacity -= numOfBeds;
-    }
+void Room::updateRoomCapacity(int numOfBeds) {
+    currentCapacity += numOfBeds;
     updateStatus(0);
 }
 
 void Room::deleteBookedClient(int id) {
     int index = findClientbyId(id);
     if (index != -1) {
+        delete bookedClients[index]; 
         bookedClients.erase(bookedClients.begin() + index);
     }
 }
@@ -353,6 +357,7 @@ void Room::deleteAllBookedClientsbyDate(std::string date)
         checkInDate = checkInDate.substr(6, 4) + "-" + checkInDate.substr(3, 2) + "-" + checkInDate.substr(0, 2);
         if (checkInDate <= date) 
         {
+            delete bookedClients[i];
             bookedClients.erase(bookedClients.begin() + i);
             i--;
         }
@@ -362,4 +367,31 @@ void Room::deleteAllBookedClientsbyDate(std::string date)
 bool Room::hasReservation()
 {
     return bookedClients.size() > 0;
+}
+
+
+void Room::editBookedClient(int bookedClientindex, int numOfBeds,
+  std::string startDate, std::string endDate) {
+  bookedClient& client = *(bookedClients[bookedClientindex]);
+  client.setNumberofBeds(numOfBeds);
+  client.setReserveDate(startDate);
+  client.setCheckoutDate(endDate);
+}
+       
+void Room::passDay(std::string date) {
+  date = date.substr(6, 4) + "-" + date.substr(3, 2) + "-" + date.substr(0, 2);
+  for (int i = 0; i < bookedClients.size(); i++)
+  {
+    std::string checkOutDate = bookedClients[i]->getCheckoutDate();
+    checkOutDate = checkOutDate.substr(6, 4) + "-" +
+     checkOutDate.substr(3, 2) + "-" + checkOutDate.substr(0, 2);
+    if (checkOutDate < date)
+    {
+      updateRoomCapacity(-bookedClients[i]->getNumberofBeds());
+      delete bookedClients[i];
+      bookedClients.erase(bookedClients.begin() + i);
+      i--;
+    }
+  }
+
 }

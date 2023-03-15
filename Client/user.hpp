@@ -29,10 +29,13 @@ class User{
         void setClientAddress(std::string clientAddress);
         void addReservedRoom(bookedClient* bookedClient);
         std::string showFutureReservations(std::string date);
-        int deleteFutureReservation(int roomNum, int bedToCancle, std::string date);
+        int cancelFutureReservation(int roomNum, int bedToCancle, std::string date);
         bool isRoomReservedNow(int roomNum, std::string date);
-        int getReservedRoomNumOfBeds(int roomNum, std::string date);
+        int getCurReservedRoomNumOfBeds(int roomNum, std::string date);
         void deleteReservedRoom(int roomNum, std::string date);
+        int getReserveDuration(int roomNum);
+        void updateBalance(int amount);
+        void passDay(string date);
     private:
         int id;
         std::string clientName;
@@ -150,7 +153,7 @@ std::string User::showFutureReservations(string date){
     return msg;
 }
 
-int User::deleteFutureReservation(int roomNum, int bedToCancle, std::string date) {
+int User::cancelFutureReservation(int roomNum, int bedToCancle, std::string date) {
     time_t today= convertToDate(date);
     int error_num = 101;
     for(int i = 0; i < this->reservedRooms.size(); i++){
@@ -184,7 +187,7 @@ bool User::isRoomReservedNow(int roomNum, std::string date) {
     return false;
 }
 
-int User::getReservedRoomNumOfBeds(int roomNum, std::string date) {
+int User::getCurReservedRoomNumOfBeds(int roomNum, std::string date) {
     time_t today= convertToDate(date);
     for(int i = 0; i < this->reservedRooms.size(); i++){
         bookedClient& cur_reserv = *(reservedRooms[i]);
@@ -195,19 +198,46 @@ int User::getReservedRoomNumOfBeds(int roomNum, std::string date) {
           }
         }
     }
-    return 0;
+    return -1;
 }
 
 void User::deleteReservedRoom(int roomNum, std::string date) {
     time_t today= convertToDate(date);
     for(int i = 0; i < this->reservedRooms.size(); i++){
         bookedClient& cur_reserv = *(reservedRooms[i]);
-        if(difftime(convertToDate(cur_reserv.getReserveDate()), today) <= 0) {
+        if (cur_reserv.getRoomNumber() == roomNum) {
+          if(difftime(convertToDate(cur_reserv.getReserveDate()), today) <= 0) {
           // user is in this room now
-          if (cur_reserv.getRoomNumber() == roomNum) {
             this->reservedRooms.erase(this->reservedRooms.begin() + i);
             return;
           }
         }
     }
+}
+
+int User::getReserveDuration(int roomNum) {
+    for(int i = 0; i < this->reservedRooms.size(); i++){
+        bookedClient& cur_reserv = *(reservedRooms[i]);
+        if (cur_reserv.getRoomNumber() == roomNum) {
+          return cur_reserv.getReserveDuration();
+        }
+    }
+    return 0;
+}
+
+void User::updateBalance(int amount) {
+  this->clientBalance += amount;
+}
+
+
+void User::passDay(string date) {
+  time_t today= convertToDate(date);
+  for(int i = 0; i < this->reservedRooms.size(); i++){
+      bookedClient& cur_reserv = *(reservedRooms[i]);
+      if(difftime(convertToDate(cur_reserv.getCheckoutDate()), today) < 0) {
+      // user is in this room now
+        this->reservedRooms.erase(this->reservedRooms.begin() + i);
+        i--;
+      }      
+  }
 }

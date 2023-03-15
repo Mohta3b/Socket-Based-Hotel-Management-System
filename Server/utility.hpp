@@ -173,3 +173,12 @@ bool isValidNewPassword(string newPassword, string oldPassword) {
   }
   return true;
 }
+
+string convertSecondsToDate(time_t seconds) {
+  struct tm * timeinfo;
+  char buffer[80];
+  timeinfo = localtime(&seconds);
+  strftime(buffer, 80, "%d-%m-%Y", timeinfo);
+  return buffer;
+}
+

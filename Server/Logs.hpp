@@ -1,36 +1,26 @@
 #pragma once
+// use ifndef
+#ifndef LOGS_HPP
+#define LOGS_HPP
 #include <iostream>
 #include <map>
+#include <string>
+#include <ctime>
+#include <fstream>
+#include <sys/stat.h>
+
+#ifndef BOOST_ALL_DYN_LINK
+#   define BOOST_ALL_DYN_LINK
+#endif
+#include <boost/filesystem.hpp>
+
 #define SYSTEM 0
 #define USER 1
 #define ADMIN 2
 
 void logEvent(int type, int log_id, std::string detail = "", int user_id = 0);
-std::map<int,std::string> logs = {
-    {0,"set server"},
-    {1, "read json files"},
-    {2, "client connected to server"},
-    {3, "user signed up"},
-    {4, "user logged out"},
-    {5, "failed attempt to sign up"},
-    {6, "user logged in"},
-    {7, "request: view user info"},
-    {8, "request: view rooms info"},
-    {9, "request: booking"},
-    {10, "request: canceling"},
-    {11, "request: edit user info"},
-    {12, "request: leaving the room"},
-    {13, "unknown command"},
-    {14, "request: view all users info"},
-    {15, "request: pass a day"},
-    {16, "request: remove guests from room"},
-    {17, "request: add room"},
-    {18, "request: modify room"},
-    {19, "request: remove room"},
-    {20, "client disconnected"},
-    {21, "server shut down"},
-    {22,"setup server failed!"},
-    {23,"Error!"},
-    {24,"failed attempt to login"}
 
-};
+
+
+
+#endif

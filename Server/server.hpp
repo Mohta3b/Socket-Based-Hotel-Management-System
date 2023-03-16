@@ -3,15 +3,25 @@
 #include <nlohmann/json.hpp>
 #include <vector>
 #include <regex>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <arpa/inet.h>
+#include <boost/algorithm/string.hpp>
+#include "../Server/Logs.hpp"
+#include "../Server/utility.hpp"
+#include "../Server/Errors.hpp"
 #include "../Client/admin.hpp"
 #include "../Client/room.hpp"
 #include "../Client/user.hpp"
-#include "utility.hpp"
 
 using json = nlohmann::json;
 using namespace std;
 const int BUFFER_SIZE = 1024;
-const string CONFIG_PATH = "config.json";
+const string CONFIG_PATH = "./Server/config.json";
 const int NOTREGISTERED = -1;
 enum Status {PENDDING, ACCEPTED, REJECTED};
 

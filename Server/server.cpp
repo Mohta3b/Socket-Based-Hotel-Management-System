@@ -1,19 +1,6 @@
-#pragma once
+
 #include "server.hpp"
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <nlohmann/json.hpp>
-#include <arpa/inet.h>
-#include "../Server/Logs.hpp"
-#include "../Server/utility.hpp"
-#include "../Server/Errors.hpp"
-#include <boost/algorithm/string.hpp>
+
 
 int Server::acceptClient(int server_fd)
 { // -2 STANDS FOR EMPTY

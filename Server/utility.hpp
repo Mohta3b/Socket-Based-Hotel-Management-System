@@ -105,14 +105,17 @@ bool isPhoneNumber(string str)
 }
 
 //  is address
-bool isAddress(string str)
+bool isAddress(string& str)
 {
   for (int i = 0; i < str.size(); i++)
   {
     if ((str[i] < 'a' || str[i] > 'z') && (str[i] < 'A' || str[i] > 'Z') &&
-        (str[i] < '0' || str[i] > '9') && str[i] != '*')
+        (str[i] < '0' || str[i] > '9') && str[i] != ' ')
       return false;
+    if(str[i] == '*')
+      str[i] = ' ';
   }
+
   return true;
 }
 

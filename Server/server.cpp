@@ -52,7 +52,7 @@ void Server::readRoomsUserFiles()
   cout << "users: " << this->users.size() << endl;
   this->rooms = rooms["rooms"];
   cout << "rooms: " << this->rooms.size() << endl;
-  sleep(3);
+  // sleep(3);
   // add reserved bookedclients to user
   for (auto& user: this->users) {
     for (auto &room : this->rooms)
@@ -69,13 +69,17 @@ void Server::readRoomsUserFiles()
   }
 }
 
-void Server::setDate() {
+void Server::setDate(string defaultDate) {
   // clear terminal screen
   system("clear");
   cout << "please enter server start date" << endl;
   cout << "setTime <Date Time>\nsetTime ";
   string TempDate;
-  cin >> TempDate;
+  if(defaultDate != "01-01-2020") {
+    cin >> TempDate;
+  } else {
+    TempDate = defaultDate;
+  }
   // check if date is valid with regex dd-mm-yyyy
   if (!regex_match(TempDate, dateRegex)) {
     cout << "invalid date, please try again" << endl;
@@ -85,7 +89,7 @@ void Server::setDate() {
     logEvent(SYSTEM, 0, "Set Date was successfull");
     return;
   }
-  setDate();
+  setDate("01-01-2020");
 }
 
 void Server::run()
@@ -105,7 +109,7 @@ void Server::run()
   }
   string msg = "Server is running\t";
   logEvent(SYSTEM, 0, msg);
-  setDate();
+  setDate("01-01-2020");
 
   // send(1, msg.c_str(), msg.length(), 0);
   // write(1, msg.c_str(), msg.length());
@@ -163,7 +167,7 @@ void Server::run()
           msg = to_string(newClient) + " is connected to server";
           logEvent(SYSTEM, 2, msg);
           FD_SET(newClient, &master_set);
-          Client new_client;
+          Client new_client(newClient,NOTREGISTERED);
           onlineClients.push_back(new_client);
         }
         else
@@ -211,6 +215,8 @@ void Server::run()
           //  if there is no one then recv return 0 i guess so we
           // should consider this.
           msg = string(buffer);
+          cout << "msg is: " << msg << endl;
+          // sleep(2);
           // handle commands
           // client hasnt logged in yet
           // Client client = findClient(i);
@@ -284,6 +290,7 @@ void Server::run()
               commandNum = client.commandID;
             }
             bool isCommon = true;
+            cout << "line 293: commandNum is: " << commandNum << endl;
             // client (common commands)
             switch(commandNum) {
               case 0: // logout
@@ -360,9 +367,10 @@ void Server::run()
           // cout << msg.substr(0,50) << "\t is to send to clinet\n"<< endl; debug
           // send size of msg first to the client
           int msgSize = msg.length() + 1;
+          cout << "369: msg is: " << msg << endl;
           // convert int to  constant c string
-          // const char *msgSizeStr = to_string(msgSize).c_str();          
-          if ((byteCount = send(i, (char*)&msgSize, sizeof(int), 0)) == -1)
+          if ((byteCount = send(i, to_string(msgSize).c_str(),
+            to_string(msgSize).length()+1, 0)) == -1) 
           {
             cout << i << ": has error got -1 on send" << endl;
             FD_CLR(i, &master_set);
@@ -375,6 +383,8 @@ void Server::run()
             }
             continue;
           }
+          memset(buffer, 0, 4);
+          recv(i, buffer, 3, 0);
           if ((byteCount = send(i, msg.c_str(), msg.length() + 1, 0)) == -1)
           {
             cout << i << ": has error got -1 on send" << endl;
@@ -645,6 +655,7 @@ void Server::login(Client& client, string& msg) {
     int errorNum = 503;
     logEvent(SYSTEM, 24, get_error(errorNum));
     msg = get_error(errorNum);
+    client.commandID = NOTREGISTERED;
     return;
   }
   string username = tokens[0];
@@ -655,6 +666,7 @@ void Server::login(Client& client, string& msg) {
     int errorNum = 430;
     logEvent(SYSTEM, 24, get_error(errorNum));
     msg = get_error(errorNum);
+    client.commandID = NOTREGISTERED;
     return;
   }
   // client has logged in successfully
@@ -858,6 +870,13 @@ void Server::bookRoom(Client& client, string& msg,vector<string>& commands)
   int errorNum;
   // check if command contains <RoomNum> <NumOfBeds> <ReserveDate> <CheckOutDate>
   //  and checkoutdate > reservedate
+  if(commands.size()!=5)
+  {
+    errorNum = 503;
+    logEvent(USER, 9, get_error(errorNum),users[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   if(!isNumber(commands[1]) || !isNumber(commands[2]) || !regex_match(commands[3],dateRegex)
    || !regex_match(commands[4],dateRegex) 
    || !validRangeDate(commands[3],commands[4],this->date))
@@ -946,6 +965,9 @@ void Server::cancelReserve(Client& client, string& msg,vector<string>& commands)
     // log
     logEvent(USER, 10, "successful!! send future reservations list",users[client.index].getId());
     
+  }else if(commands.size() == 2 && commands[1] == "quit") {
+      logEvent(USER, 10, "user quit the cancelReserve operation",users[client.index].getId());
+      msg = "quit";
   } else if(commands.size() == 3){
       // delete numofbeds from room
       // check if room number and numofbeds is valid
@@ -953,6 +975,7 @@ void Server::cancelReserve(Client& client, string& msg,vector<string>& commands)
         int errorNum = 401;
         logEvent(USER, 10, get_error(errorNum),users[client.index].getId());
         msg = get_error(errorNum);
+        return;
       }
       int roomNum = stoi(commands[1]);
       int numOfBeds = stoi(commands[2]);
@@ -981,6 +1004,13 @@ void Server::cancelReserve(Client& client, string& msg,vector<string>& commands)
 void Server::leaveRoom(Client& client, string& msg,vector<string>& commands) 
 {
     // check if room number is valid
+    if(commands.size() != 2)
+    {
+      int errorNum = 503;
+      logEvent(USER, 12, get_error(errorNum),users[client.index].getId());
+      msg = get_error(errorNum);
+      return;
+    }
     if(!isNumber(commands[1]))
     {
       int errorNum = 401;
@@ -1057,6 +1087,13 @@ void Server::banGuestsFromRoom(Client& client, string& msg,vector<string>& comma
 {
   // coomand[1] is room number. by this command admin can remove all guests from a room
   // check if room number is valid
+  if(commands.size() != 2)
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 16, get_error(errorNum),admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   int errorNum = 503;
   if(!isNumber(commands[1]))
   {
@@ -1097,6 +1134,13 @@ void Server::addRoom(Client& client, string& msg,vector<string>& commands)
   // add room to rooms and check whether it is valid or not and room number is unique
   // if valid add it to rooms
   // check if room number is valid
+  if(commands.size() != 4)
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 17, get_error(errorNum) + " -> room number",admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   int errorNum = 503;
   if(!isNumber(commands[1]))
   {
@@ -1150,6 +1194,13 @@ void Server::modifyRoom(Client& client, string& msg,vector<string>& commands)
   // modify changes a room configuration if it is valid
 
   // check if room number is valid
+  if(commands.size() != 4)
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 18, get_error(errorNum), admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   int errorNum = 503;
   if(!isNumber(commands[1]))
   {
@@ -1216,6 +1267,13 @@ void Server::deleteRoom(Client& client, string& msg,vector<string>& commands)
   // delete room from rooms if it is valid and if it was not reserved in any date
 
   // check if room number is valid
+  if(commands.size() != 2)
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 19, get_error(errorNum), admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   int errorNum = 503;
   if(!isNumber(commands[1]))
   {
@@ -1256,6 +1314,13 @@ void Server::deleteRoom(Client& client, string& msg,vector<string>& commands)
 
 void Server::passDay(Client& client, string& msg,vector<string>& commands) {
   int increaseDate;
+  if(commands.size() != 2)
+  {
+    int errorNum = 503;
+    logEvent(ADMIN, 15, get_error(errorNum), admins[client.index].getId());
+    msg = get_error(errorNum);
+    return;
+  }
   int errorNum = 503;
   if(!isNumber(commands[1]))
   {

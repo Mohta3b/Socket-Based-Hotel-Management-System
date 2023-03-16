@@ -14,7 +14,7 @@
 #include <nlohmann/json.hpp>
 using json = nlohmann::json;
 using namespace std;
-const std::string CONFIG_PATH = "../Server/config.json";
+const std::string CONFIG_PATH = "./Server/config.json";
 const int BUFFER_SIZE = 4096;
 
 map<string,string> commandsHelp = {

@@ -61,17 +61,24 @@ void Client::run()
         if(getCommand(Help,311)){
           continue;
         }
+        system("clear");
         Help = commandsHelp["signup"] + "\nEnter your password:\n>>";
         if(getCommand(Help,200)){
           continue;
         }
+        system("clear");
+
         Help = commandsHelp["signup"] + "\nEnter your balance:\n>>";
         if(getCommand(Help,200)){
           continue;
         }
+        system("clear");
+
         Help = commandsHelp["signup"] + "\nEnter your phone:\n>>";
         if(getCommand(Help,200))
           continue;
+        system("clear");
+
         Help = commandsHelp["signup"] + "\nEnter your address:\n>>";
         if(getCommand(Help,231))
           continue;
@@ -83,7 +90,8 @@ void Client::run()
       {
         string Help = commandsHelp["login"] 
         + "\nEnter your Username and Password(<username> <password>):\n>>";
-        cout << Help << endl;
+        cout << Help;
+        
         input_msg = get_input();
         send(socketFd, input_msg.c_str(), input_msg.length() + 1, 0);
         output_msg = RecieveFromServer();
@@ -102,8 +110,12 @@ void Client::run()
           this->status = ClientStatus::USER;
         }
         system("clear");
-        cout << "You have successfully logged in.\n";
-        PressEntertoContinue();
+        if(output_msg !="quit"){
+          cout << "You have successfully logged in.\n";
+        } else {
+          cout << "You have canceled this operation.\n";
+        }
+          PressEntertoContinue();
       }
       else // invalid command
       {
@@ -146,11 +158,11 @@ void Client::run()
         output_msg = RecieveFromServer();
         cout << output_msg << endl;
         Help =" Enter the room number you want to cancel from the above list and the number of beds(<roomNum> <numOfBeds>):";
-        cout << Help << endl;
+        // cout << Help << endl;
         Help = output_msg + Help + "\n>>";
         getCancelCommand(Help,110);
-        cout << "Your reservation has been canceled successfully.\n";
-        PressEntertoContinue();
+        // cout << "Your reservation has been canceled successfully.\n";
+        // PressEntertoContinue();
         break;
 
       default:
@@ -204,7 +216,7 @@ void Client::showMenu()
     cout << "Please enter your choice:" << endl;
     cout << "0. Logout" << endl;
     cout << "1. View Account Information" << endl;
-    cout << "2. View Room Information (<2> <full/empty>)" << endl;
+    cout << "2. View Room Information (<2> <all/empty>)" << endl;
     cout << "3. Edit Account Information" << endl;
     cout << "4. Reserve Room (<4> <room number> <number of beds> <check in date> <check out date>)" << endl;
     cout << "5. Cancel Reservation (<5> <room number> <number of beds>)" << endl;
@@ -263,16 +275,28 @@ void Client::showMenu()
 string Client::RecieveFromServer()
 {
   string msg;
+  memset(buffer, 0, BUFFER_SIZE);
   int n = recv(this->socketFd, buffer, BUFFER_SIZE, 0);
+  // cout << "n: " << n << endl;
+  // sleep(2);
   if (n <= 0)
   {
     perror("ERROR reading from socket");
     exit(1);
   }
   int msg_size = atoi(buffer);
-  memset(buffer, 0, BUFFER_SIZE);
-  recv(this->socketFd, buffer, msg_size, 0);
-  msg = string(buffer);
+  // cout << "msg_size: " << msg_size << endl;
+  // send to server that we are ready to recieve the msg
+  send(this->socketFd, "ok", 2, 0);
+  // sleep(2);
+  // malloc buffer with = msg_size
+  char* temp_buffer = (char*)malloc(msg_size);
+  memset(temp_buffer, 0, msg_size);
+  recv(this->socketFd, temp_buffer, msg_size, 0);
+  msg = string(temp_buffer);
+  // cout  << "msg: " << msg << endl;
+  // sleep(2);
+  free(temp_buffer);
   return msg;
 }
 
@@ -313,9 +337,16 @@ void Client::getCancelCommand(string Help, int errorCode){
     output_msg = RecieveFromServer();
     if (output_msg == get_error(errorCode))  
       break; 
+    if(output_msg == "quit") {
+      cout << "you have canceled this operation" << endl;
+      PressEntertoContinue();
+      return;
+    }
     cout << output_msg << endl;
     PressEntertoContinue();
   } 
+  cout << "Your reservation has been canceled successfully.\n";
+  PressEntertoContinue();
 }
 
 int main()

@@ -86,7 +86,7 @@ private:
   // setting up a server
   int setupServerSocket();
   // set initial time
-  void setDate();
+  void setDate(string defaultDate = "01-01-2020");
   // uttilities
   //  find client
   // Client& findClient(int socket_fd);

@@ -143,7 +143,7 @@ class Room{
         void passDay(std::string date);
     private:
         int room_number;
-        bool status;
+        int status;
         int price;
         int maxCapacity;
         int currentCapacity;
@@ -157,7 +157,8 @@ void to_json(json& j, const Room& r) {
      {"price", r.price}, {"maxCapacity", r.maxCapacity},
       {"capacity", r.currentCapacity} };
     // add booked clients
-    
+    // creat empty vector as json["users"]
+    j["users"] = json::array();
     for(auto& element : r.bookedClients){
         json j2;
         to_json(j2, *element);

@@ -45,12 +45,14 @@ int Server::setupServerSocket()
 void Server::readRoomsUserFiles()
 {
   json rooms = readJsonFile(this->roomsPath);
-  this->roomsPath = roomsPath;
   json clients = readJsonFile(this->usersPath);
-  this->usersPath = usersPath;
-  this->users = clients["users"];
-  this->rooms = rooms["rooms"];
   this->admins = clients["admins"];
+  cout << "admins: " << this->admins.size() << endl;
+  this->users = clients["users"];
+  cout << "users: " << this->users.size() << endl;
+  this->rooms = rooms["rooms"];
+  cout << "rooms: " << this->rooms.size() << endl;
+  sleep(3);
   // add reserved bookedclients to user
   for (auto& user: this->users) {
     for (auto &room : this->rooms)

@@ -34,7 +34,7 @@ void to_json(json& j, const Admin& a) {
 void from_json(const json& j, Admin& a) {
     j.at("id").get_to(a.id);
     j.at("username").get_to(a.adminName);
-    j.at("adminPassword").get_to(a.adminPassword);
+    j.at("password").get_to(a.adminPassword);
 }
 
 Admin::Admin(int id, std::string adminName, std::string adminPassword){

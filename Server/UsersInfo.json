@@ -1,41 +1,35 @@
 {
-  "users": 
-  [
-    {
-      "id":1,
-      "username":"Morad",
-      "password":"1234",
-      "admin":"false",
-      "balance":"1000",
-      "phoneNumber":"00945692356",
-      "address":"Canada, Montral"
-    },
-    {
-      "id":2,
-      "username":"Jasem",
-      "password":"4321",
-      "admin":"false",
-      "balance":"200",
-      "phoneNumber":"00125692356",
-      "address":"United States, Newyork"
-    },
-    {
-      "id":3,
-      "username":"Pedram",
-      "password":"6789",
-      "admin":"false",
-      "balance":"10",
-      "phoneNumber":"00989112659874",
-      "address":"Iran, Rasht"
-    }
-  ],
-  "admins":
-  [
-    {
-      "id":0,
-      "username":"Admin",
-      "password":"admin",
-      "admin":"true"
-    }
-  ]
+    "admins": [
+        {
+            "id": 0,
+            "password": "admin",
+            "username": "Admin"
+        }
+    ],
+    "users": [
+        {
+            "address": "Canada, Montral",
+            "balance": 1000,
+            "id": 1,
+            "password": "1234",
+            "phoneNumber": "00945692356",
+            "username": "Morad"
+        },
+        {
+            "address": "United States, Newyork",
+            "balance": 200,
+            "id": 2,
+            "password": "4321",
+            "phoneNumber": "00125692356",
+            "username": "Jasem"
+        },
+        {
+            "address": "Iran, Rasht",
+            "balance": 10,
+            "id": 3,
+            "password": "6789",
+            "phoneNumber": "00989112659874",
+            "username": "Pedram"
+        }
+    ]
 }

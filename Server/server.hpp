@@ -91,7 +91,7 @@ private:
   //  find client
   // Client& findClient(int socket_fd);
   int findClientIndex(int socket_fd);
-  void readRoomsUserFiles(string roomsPath="RoomsInfo.json", string usersPath="UsersInfo.json");
+  void readRoomsUserFiles();
   //  is repeated
   bool isRepeatedName(string name);
   // find unique user id
@@ -133,6 +133,8 @@ public:
     port = config["commandChannelPort"];
     host_name = config["hostName"];
     max_clients = config["maxClients"];
+    roomsPath = "./Server/RoomsInfo.json";
+    usersPath = "./Server/UsersInfo.json";
   }
 };
  

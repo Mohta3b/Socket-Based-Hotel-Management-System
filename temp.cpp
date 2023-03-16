@@ -44,6 +44,7 @@
 #include <chrono>
 #include <boost/algorithm/string.hpp>
 #include <nlohmann/json.hpp>
+#include "./Server/Logs.hpp"
 struct Reservation {
     int numberOfBeds;
     std::string checkInDate;
@@ -95,20 +96,25 @@ int main() {
     //   std::cout << "date2222" << std::endl;
     // }
     // return 0;
-    std::string ss,ss1,ss2;
-    std::stringstream ss3;
-    // read input from cin until enter is pressed then exit the while loop
-    std::getline(std::cin, ss);
-    while(ss.find("  ") != std::string::npos) {
-        ss.erase(ss.find("  "), 1);
-    }
-    std::cout << ss << std::endl;
+    // std::string ss,ss1,ss2;
+    // std::stringstream ss3;
+    // // read input from cin until enter is pressed then exit the while loop
+    // std::getline(std::cin, ss);
+    // while(ss.find("  ") != std::string::npos) {
+    //     ss.erase(ss.find("  "), 1);
+    // }
+    // std::cout << ss << std::endl;
     
-    std::vector<std::string> args = tokenize(ss, ' ');
-    //std::cout << args[0] << std::endl;
-    std::cout << args.size() << std::endl;
+    // std::vector<std::string> args = tokenize(ss, ' ');
+    // //std::cout << args[0] << std::endl;
+    // std::cout << args.size() << std::endl;
 
     // std::cin >> ss >> ss1 >> ss2;
     // std::cout << ss <<ss1 <<ss2 << std::endl;
+
+    const char *server_log_directory = "./Server/Log";
+    struct stat sb;
+    if (!(stat(server_log_directory, &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
+        boost::filesystem::create_directories(server_log_directory);
 
 }

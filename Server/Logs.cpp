@@ -32,29 +32,28 @@ std::map<int,std::string> errLogs = {
 
 void checkDirectory(int type, int user_id)
 {
-    return;
-    const char *server_log_directory = "../Server/Log";
+    const char *server_log_directory = "./Server/Log";
     struct stat sb;
     if (!(stat(server_log_directory, &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
         boost::filesystem::create_directories(server_log_directory);
 
-    const char *client_log_directory = "../Client/Log";
+    const char *client_log_directory = "./Client/Log";
     if (!(stat(client_log_directory, &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
         boost::filesystem::create_directories(client_log_directory);
 
-    const char *user_log_directory = "../Client/Log/Users";
+    const char *user_log_directory = "./Client/Log/Users";
     if (!(stat(user_log_directory, &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
         boost::filesystem::create_directories(user_log_directory);
 
-    const char *admin_log_directory = "../Client/Log/Admins";
+    const char *admin_log_directory = "./Client/Log/Admins";
     if (!(stat(admin_log_directory, &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
         boost::filesystem::create_directories(admin_log_directory);
     
     std::string path;
     if (type == USER)
-        path = "../Client/Logs/Users/"+std::to_string(user_id);
+        path = "./Client/Logs/Users/"+std::to_string(user_id);
     else if (type == ADMIN)
-        path = "../Client/Logs/Admins/"+std::to_string(user_id);
+        path = "./Client/Logs/Admins/"+std::to_string(user_id);
 
     if (!(stat(path.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode))) // directory does not exists
         boost::filesystem::create_directories(path);
@@ -83,7 +82,7 @@ void logEvent(int type, int log_id, std::string detail, int user_id)
         log += "detail: " + detail + '\n';
 
         std::ofstream userLogFile;
-        std::string path = "../Client/Logs/Users/"+ std::to_string(user_id) + "/log.txt";
+        std::string path = "./Client/Logs/Users/"+ std::to_string(user_id) + "/log.txt";
         userLogFile.open(path, std::ios::app);
         userLogFile << log << std::endl;
         userLogFile.close();
@@ -95,7 +94,7 @@ void logEvent(int type, int log_id, std::string detail, int user_id)
         log += "detail: " + detail + '\n';
 
         std::ofstream adminLogFile;
-        std::string path = "../Client/Logs/Admins/"+ std::to_string(user_id) + "/log.txt";
+        std::string path = "./Client/Logs/Admins/"+ std::to_string(user_id) + "/log.txt";
         adminLogFile.open(path, std::ios::app);
         adminLogFile << log << std::endl;
         adminLogFile.close();
@@ -109,7 +108,7 @@ void logEvent(int type, int log_id, std::string detail, int user_id)
 
     std::ofstream serverLogFile;
 
-    serverLogFile.open("../Server/Log/log.txt", std::ios::app);
+    serverLogFile.open("./Server/Log/log.txt", std::ios::app);
 
     serverLogFile << log << std::endl;
 

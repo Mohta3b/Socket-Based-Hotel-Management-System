@@ -6,7 +6,7 @@ client.out: client.o
 	$(CC) $^ -o $@
 
 server.out: server.o Logs.o
-	$(CC) $^ -o $@
+	$(CC) $^ -lboost_filesystem -o $@
 
 client.o: Client/client.cpp Client/client.hpp Server/utility.hpp Server/Errors.hpp
 	$(CC) -c $< -o $@

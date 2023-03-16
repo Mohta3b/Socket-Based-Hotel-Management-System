@@ -42,11 +42,11 @@ int Server::setupServerSocket()
   return server_fd;
 }
 
-void Server::readRoomsUserFiles(string roomsPath, string usersPath)
+void Server::readRoomsUserFiles()
 {
-  json rooms = readJsonFile(roomsPath);
+  json rooms = readJsonFile(this->roomsPath);
   this->roomsPath = roomsPath;
-  json clients = readJsonFile(usersPath);
+  json clients = readJsonFile(this->usersPath);
   this->usersPath = usersPath;
   this->users = clients["users"];
   this->rooms = rooms["rooms"];
@@ -94,6 +94,8 @@ void Server::run()
   int byteCount;
   // setup server
   this->serverFd = setupServerSocket();
+  // cout << "serverFd is: " << serverFd << endl;
+  // sleep(5);
   if (serverFd < 0)
   {
     logEvent(SYSTEM, 22, "Error in tcp setup!");
@@ -1294,6 +1296,8 @@ void Server::passDay(Client& client, string& msg,vector<string>& commands) {
 
 int main() {
   Server server;
+  // cout << "Server is running..." << endl;
+  // sleep(5);
   server.run();
   return 0;
 }

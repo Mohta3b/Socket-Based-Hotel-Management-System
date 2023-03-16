@@ -58,7 +58,8 @@ class Client {
     void showCommandHelp(int commandId);
     string RecieveFromServer();
     void showMenu();
-    void getCommand(string Help, int errorCode);
+    bool getCommand(string Help, int errorCode);
+    void getCancelCommand(string Help, int errorCode);
     Client(string configFile) {
       // read config file
       json config = readJsonFile(configFile);

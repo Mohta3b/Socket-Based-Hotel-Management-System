@@ -58,15 +58,23 @@ void Client::run()
       {
         cout << "Note: You can cancel this operation by typing 'quit' in any step." << endl;
         string Help = commandsHelp["signup"] + "\nEnter your username:\n>>";
-        getCommand(Help,311);
+        if(getCommand(Help,311)){
+          continue;
+        }
         Help = commandsHelp["signup"] + "\nEnter your password:\n>>";
-        getCommand(Help,200);
+        if(getCommand(Help,200)){
+          continue;
+        }
         Help = commandsHelp["signup"] + "\nEnter your balance:\n>>";
-        getCommand(Help,200);
+        if(getCommand(Help,200)){
+          continue;
+        }
         Help = commandsHelp["signup"] + "\nEnter your phone:\n>>";
-        getCommand(Help,200);
+        if(getCommand(Help,200))
+          continue;
         Help = commandsHelp["signup"] + "\nEnter your address:\n>>";
-        getCommand(Help,231);
+        if(getCommand(Help,231))
+          continue;
         system("clear");
         cout << "Your account has been created successfully.\n";
         PressEntertoContinue();
@@ -102,8 +110,7 @@ void Client::run()
         cout << output_msg << endl;
         PressEntertoContinue();
       }
-    }
-
+    } // client has logged in
     else if (this->status == ClientStatus::USER)
     {
       msg = input_msg;
@@ -114,9 +121,11 @@ void Client::run()
       switch (commandId)
       {
       case 3:// edit info(we should convert spaces to stars in address)
-        send(socketFd, msg.c_str(), msg.length() + 1, 0);
-        output_msg = RecieveFromServer();
-        cout << output_msg << endl;
+        // send(socketFd, msg.c_str(), msg.length() + 1, 0);
+        // output_msg = RecieveFromServer();
+        // cout << output_msg << endl;
+        // clear terminal screen
+        system("clear");
         cout << commandsHelp["edit_info"] << endl;
         cout << "Enter your new password(Type 'n' if you don't want to change this field!):\n>>" << endl;
         password = get_input();
@@ -139,7 +148,7 @@ void Client::run()
         Help =" Enter the room number you want to cancel from the above list and the number of beds(<roomNum> <numOfBeds>):";
         cout << Help << endl;
         Help = output_msg + Help + "\n>>";
-        getCommand(Help,110);
+        getCancelCommand(Help,110);
         cout << "Your reservation has been canceled successfully.\n";
         PressEntertoContinue();
         break;
@@ -147,6 +156,10 @@ void Client::run()
       default:
         send(socketFd, msg.c_str(), msg.length() + 1, 0);
         output_msg = RecieveFromServer();
+        // logout successfully
+        if(output_msg == get_error(201)) {
+          this->status = ClientStatus::NOT_LOGIN;
+        }
         cout << output_msg << endl;
         PressEntertoContinue();
         break;
@@ -159,6 +172,10 @@ void Client::run()
       commandId = stoi(args[0]);
       send(socketFd, msg.c_str(), msg.length() + 1, 0);
       output_msg = RecieveFromServer();
+      // logout successfully
+      if(output_msg == get_error(201)) {
+        this->status = ClientStatus::NOT_LOGIN;
+      }
       cout << output_msg << endl;
       PressEntertoContinue();
     }
@@ -247,7 +264,7 @@ string Client::RecieveFromServer()
 {
   string msg;
   int n = recv(this->socketFd, buffer, BUFFER_SIZE, 0);
-  if (n < 0)
+  if (n <= 0)
   {
     perror("ERROR reading from socket");
     exit(1);
@@ -259,7 +276,7 @@ string Client::RecieveFromServer()
   return msg;
 }
 
-void Client::getCommand(string Help, int errorCode){
+bool Client::getCommand(string Help, int errorCode){
   // it will get command from user and send it to server and do this until server send an error code
   string input_msg;
   string output_msg;
@@ -271,14 +288,35 @@ void Client::getCommand(string Help, int errorCode){
     output_msg = RecieveFromServer();
     if (output_msg == get_error(errorCode) || (errorCode!=230 && output_msg == "quit"))
     {
-      break;
+      if(output_msg == "quit") {
+        cout << "you have canceled this operation" << endl;
+        PressEntertoContinue();
+        return true;
+      }
+      return false;
     }
     cout << output_msg << endl;
     PressEntertoContinue();
   }
-
 }
 
+void Client::getCancelCommand(string Help, int errorCode){
+  string input_msg;
+  string output_msg;
+  while (true)
+  {
+    cout << Help;
+    input_msg = get_input();
+    //  prefix "5" to the command to cancel it
+    input_msg = "5 " + input_msg;
+    send(socketFd, input_msg.c_str(), input_msg.length() + 1, 0);
+    output_msg = RecieveFromServer();
+    if (output_msg == get_error(errorCode))  
+      break; 
+    cout << output_msg << endl;
+    PressEntertoContinue();
+  } 
+}
 
 int main()
 {

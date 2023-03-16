@@ -31,12 +31,12 @@ map<string,string> commandsHelp = {
   {"delete_room", "remove <RoomNum>"},
   {"ban_guest", "<roomNum>"}
 };
-json readJsonFile(string filePath) {
-  ifstream f(filePath);
-  json data = json::parse(f);
-  f.close();
-  return data;
-}
+// json readJsonFile(string filePath) {
+//   ifstream f(filePath);
+//   json data = json::parse(f);
+//   f.close();
+//   return data;
+// }
 enum ClientStatus {
   NOT_LOGIN=-1,
   USER,

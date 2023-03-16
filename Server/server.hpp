@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <nlohmann/json.hpp>
 #include <vector>
@@ -43,7 +44,7 @@ struct Client
 
   int socket_fd;
   bool isAdmin;
-  int index; // save client id if sth could happen to array.
+  int index; // save client index in user/admin vectors // id if sth could happen to array.
   string command;
   int argsNum;
   int commandID;
@@ -75,17 +76,18 @@ private:
   // setting up a server
   int setupServerSocket();
   // set initial time
-  void Server::setDate();
+  void setDate();
   // uttilities
   //  find client
-  Client& findClient(int socket_fd);
-  void readRoomsUserFiles(string roomsPath, string usersPath);
+  // Client& findClient(int socket_fd);
+  int findClientIndex(int socket_fd);
+  void readRoomsUserFiles(string roomsPath="RoomsInfo.json", string usersPath="UsersInfo.json");
   //  is repeated
   bool isRepeatedName(string name);
   // find unique user id
   int findUniqueID();
   // add new user
-  void Server::addUser(string args);
+  void addUser(string args);
   // find user or admin by name
   MiniClient findUserAdminByName(string name);
   // commands

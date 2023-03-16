@@ -1,10 +1,11 @@
+#pragma once
 #include <iostream>
 #include <string>
 #include <ctime>
 #include <fstream>
 #include <sys/stat.h>
 #include <boost/filesystem.hpp>
-#include "Log.hpp"
+#include "Logs.hpp"
 
 
 
@@ -37,7 +38,7 @@ void checkDirectory(int type, int user_id)
         boost::filesystem::create_directories(path);
 }
 
-void logEvent(int type, int log_id, std::string detail = "", int user_id = 0)
+void logEvent(int type, int log_id, std::string detail, int user_id)
 {
     std::string log;
     // write code to append or create txt file and save current time, logs[log_id] and detail if available in current directory

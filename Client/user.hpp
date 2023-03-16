@@ -1,9 +1,8 @@
+#pragma once
 #include <ctime>
 #include <string>
 #include <nlohmann/json.hpp>
 #include "./room.hpp"
-
-
 #include "../Server/utility.hpp"
 using json = nlohmann::json;
 
@@ -63,7 +62,8 @@ void from_json(const json& j, User& u) {
     j.at("address").get_to(u.clientAddress);
 }
 
-User::User(int id, std::string clientName, std::string clientPassword, int clientBalance, std::string clientPhoneNumber, std::string clientAddress){
+User::User(int id, std::string clientName, std::string clientPassword,
+ int clientBalance, std::string clientPhoneNumber, std::string clientAddress){
     this->id = id;
     this->clientName = clientName;
     this->clientPassword = clientPassword;

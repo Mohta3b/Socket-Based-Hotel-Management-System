@@ -1,7 +1,5 @@
+#pragma once
 #include <iostream>
-
-
-
 struct error_info{
     int code;
     char *description;

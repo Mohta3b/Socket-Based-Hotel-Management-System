@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <vector>
 #include <nlohmann/json.hpp>
@@ -100,14 +101,15 @@ void bookedClient::setRoomNumber(int roomNumber){
 }
 
 int bookedClient::getReserveDuration() {
-    getNumOfDays( this->reserveDate, this->checkoutDate);
+    return getNumOfDays( this->reserveDate, this->checkoutDate);
 }
 
 
 ////////////////////////////// Room Class //////////////////////////////
 class Room{
     public:
-        Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient*> bookedClients);
+        Room(int number, bool status, float price, int maxCapacity,
+         int currentCapacity, std::vector<bookedClient*> bookedClients);
         Room(int number, int maxCapacity , int price);
         Room(){};
         int getNumber(); // unique
@@ -127,7 +129,8 @@ class Room{
         void addBookedClient(bookedClient* client);
         std::string getRoomInfo();
         std::string getBookedClientsString();
-        bool isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId);
+        bool isRoomAvailable(std::string startDate, std::string endDate,
+         int bedsNumber, int clientId);
         void update();
         void updateStatus(int numOfBeds);
         int findClientbyId(int userId);
@@ -183,7 +186,8 @@ void from_json(const json& j, Room& r) {
 }
 
 
-Room::Room(int number, bool status, float price, int maxCapacity, int currentCapacity, std::vector<bookedClient*> bookedClients){
+Room::Room(int number, bool status, float price, int maxCapacity,
+ int currentCapacity, std::vector<bookedClient*> bookedClients){
     this->room_number = number;
     this->status = status;
     this->price = price;
@@ -280,7 +284,8 @@ std::string Room::getRoomInfo(){
 }
 
 
-bool Room::isRoomAvailable(std::string startDate, std::string endDate, int bedsNumber, int clientId)
+bool Room::isRoomAvailable(std::string startDate, std::string endDate,
+ int bedsNumber, int clientId)
 {
     // is repeated is wrong
     int index = findClientbyId(clientId);
@@ -354,7 +359,8 @@ void Room::deleteAllBookedClientsbyDate(std::string date)
     for (int i = 0; i < bookedClients.size(); i++)
     {
         std::string checkInDate = bookedClients[i]->getReserveDate();
-        checkInDate = checkInDate.substr(6, 4) + "-" + checkInDate.substr(3, 2) + "-" + checkInDate.substr(0, 2);
+        checkInDate = checkInDate.substr(6, 4) + "-" + checkInDate.substr(3, 2) 
+        + "-" + checkInDate.substr(0, 2);
         if (checkInDate <= date) 
         {
             delete bookedClients[i];

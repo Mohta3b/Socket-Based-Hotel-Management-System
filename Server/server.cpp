@@ -1,3 +1,4 @@
+#pragma once
 #include "server.hpp"
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -9,16 +10,12 @@
 #include <string>
 #include <nlohmann/json.hpp>
 #include <arpa/inet.h>
-#include "../Server/Log.hpp"
+#include "../Server/Logs.hpp"
 #include "../Server/utility.hpp"
 #include "../Server/Errors.hpp"
 #include <boost/algorithm/string.hpp>
 
-const int BUFFER_SIZE = 1024;
-const int NOTREGISTERED = -1;
-
-
-int Server::acceptClient(int server_fd = -2)
+int Server::acceptClient(int server_fd)
 { // -2 STANDS FOR EMPTY
   if (server_fd == -2)
     server_fd = serverFd;
@@ -58,7 +55,7 @@ int Server::setupServerSocket()
   return server_fd;
 }
 
-void Server::readRoomsUserFiles(string roomsPath = "RoomsInfo.json", string usersPath = "UsersInfo.json")
+void Server::readRoomsUserFiles(string roomsPath, string usersPath)
 {
   json rooms = readJsonFile(roomsPath);
   this->roomsPath = roomsPath;
@@ -188,10 +185,15 @@ void Server::run()
             cout << "rcv go -1 from: " << i << endl;
             FD_CLR(i, &master_set);
             // clear online client
-            Client client = findClient(i);
-            if (client.index != NOTREGISTERED)
+            // Client client = findClient(i);
+            // if (client.index != NOTREGISTERED)
+            // {
+            //   onlineClients.erase(onlineClients.begin() + client.index);
+            // }
+            int temp_index = findClientIndex(i);
+            if (temp_index != NOTREGISTERED)
             {
-              onlineClients.erase(onlineClients.begin() + client.index);
+              onlineClients.erase(onlineClients.begin() + temp_index);
             }
             continue;
           }
@@ -199,10 +201,15 @@ void Server::run()
             cout << "rcv go 0 from: " << i << endl;
             FD_CLR(i, &master_set);
             // clear online client
-            Client client = findClient(i);
-            if (client.index != NOTREGISTERED)
+            // Client client = findClient(i);
+            // if (client.index != NOTREGISTERED)
+            // {
+            //   onlineClients.erase(onlineClients.begin() + client.index);
+            // }
+            int temp_index = findClientIndex(i);
+            if (temp_index != NOTREGISTERED)
             {
-              onlineClients.erase(onlineClients.begin() + client.index);
+              onlineClients.erase(onlineClients.begin() + temp_index);
             }
             continue;
           }
@@ -215,7 +222,14 @@ void Server::run()
           msg = string(buffer);
           // handle commands
           // client hasnt logged in yet
-          Client client = findClient(i);
+          // Client client = findClient(i);
+          Client client;
+          int temp_index = findClientIndex(i);
+          if (temp_index == NOTREGISTERED){
+              cout << "client not found" << endl;
+          } else {
+              client = onlineClients[temp_index];
+          }
           if (client.index == NOTREGISTERED)
           {
             if (client.commandID == NOTREGISTERED) {
@@ -256,6 +270,7 @@ void Server::run()
                 login(client, msg);
               }
             }
+            onlineClients[temp_index] = client;
           } else
           { // client has logged in
             // tokenize msg
@@ -348,6 +363,7 @@ void Server::run()
             }
             // reset commandID
             client=Client(client.socket_fd,client.index);
+            onlineClients[temp_index] = client;
           }
           // check client has left
           // cout << msg.substr(0,50) << "\t is to send to clinet\n"<< endl; debug
@@ -360,10 +376,11 @@ void Server::run()
             cout << i << ": has error got -1 on send" << endl;
             FD_CLR(i, &master_set);
             // clear online client
-            Client client = findClient(i);
-            if (client.index != NOTREGISTERED)
+            // Client client = findClient(i);
+            int temp_index = findClientIndex(i);
+            if (temp_index != NOTREGISTERED)
             {
-              onlineClients.erase(onlineClients.begin() + client.index);
+              onlineClients.erase(onlineClients.begin() + temp_index);
             }
             continue;
           }
@@ -372,10 +389,11 @@ void Server::run()
             cout << i << ": has error got -1 on send" << endl;
             FD_CLR(i, &master_set);
             // clear online client
-            Client client = findClient(i);
-            if (client.index != NOTREGISTERED)
+            // Client client = findClient(i);
+            int temp_index = findClientIndex(i);
+            if (temp_index != NOTREGISTERED)
             {
-              onlineClients.erase(onlineClients.begin() + client.index);
+              onlineClients.erase(onlineClients.begin() + temp_index);
             }
             continue;
           }
@@ -383,8 +401,9 @@ void Server::run()
             cout << "send got 0 from: " << i << endl;
             FD_CLR(i, &master_set);
             // clear online client
-            Client client = findClient(i);
-            if (client.index != NOTREGISTERED)
+            // Client client = findClient(i);
+            int temp_index = findClientIndex(i);
+            if (temp_index != NOTREGISTERED)
             {
               onlineClients.erase(onlineClients.begin() + client.index);
             }
@@ -397,19 +416,32 @@ void Server::run()
 }
 
 // server uttilities
-Client &Server::findClient(int socket_fd)
+// Client& Server::findClient(int socket_fd)
+// {
+//   for (auto &c : onlineClients)
+//   {
+//     if (c.socket_fd == socket_fd)
+//     {
+//       return c; // check it is refrence
+//     }
+//   }
+//   // Client c;
+//   // c.index = NOTREGISTERED;
+//   // c.commandID = NOTREGISTERED;
+//   // return c;
+// }
+
+// retrun index of onlineClients vector
+int Server::findClientIndex(int socket_fd)
 {
-  for (auto &c : onlineClients)
+  for (int i = 0; i < onlineClients.size(); i++)
   {
-    if (c.socket_fd == socket_fd)
+    if (onlineClients[i].socket_fd == socket_fd)
     {
-      return c; // check it is refrence
+      return i;
     }
   }
-  Client c;
-  c.index = NOTREGISTERED;
-  c.commandID = NOTREGISTERED;
-  return c;
+  return NOTREGISTERED;
 }
 // find user or admin
 // password, index, isAdmin
@@ -1147,7 +1179,7 @@ void Server::modifyRoom(Client& client, string& msg,vector<string>& commands)
     return;      
   }
   Room& cur_room = rooms[roomIndex];
-  int errorNum = 101;
+  errorNum = 101;
   // check if max capacity is valid
   if(!isNumber(commands[2]))
   {
@@ -1272,3 +1304,9 @@ void Server::passDay(Client& client, string& msg,vector<string>& commands) {
 //  at client side in 5 we should check sth,
 //  first only "5", second time 5 <roomNum> <num>;
 // remember to trim each argument before concatenating in client side;
+
+int main() {
+  Server server;
+  server.run();
+  return 0;
+}

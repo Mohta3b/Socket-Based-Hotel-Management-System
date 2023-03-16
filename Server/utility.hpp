@@ -38,6 +38,18 @@ bool validUsername(string str)
     return false;
   return true;
 }
+
+bool isAlphaNum(string str)
+{
+  for (int i = 0; i < str.size(); i++)
+  {
+    if ((str[i] < 'a' || str[i] > 'z') && (str[i] < 'A' || str[i] > 'Z') &&
+        (str[i] < '0' || str[i] > '9'))
+      return false;
+  }
+  return true;
+}
+
 bool strongPassword(string str)
 {
   if (str.size() < 4)
@@ -78,16 +90,6 @@ bool isAlpha(string str)
   return true;
 }
 
-bool isAlphaNum(string str)
-{
-  for (int i = 0; i < str.size(); i++)
-  {
-    if ((str[i] < 'a' || str[i] > 'z') && (str[i] < 'A' || str[i] > 'Z') &&
-        (str[i] < '0' || str[i] > '9'))
-      return false;
-  }
-  return true;
-}
 
 // is phone number
 bool isPhoneNumber(string str)
